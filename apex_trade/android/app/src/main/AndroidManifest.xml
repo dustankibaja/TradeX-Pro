@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Read-only engine status requires network access; HTTPS enforced in client. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="apex_trade"
+        android:label="Emtifize AI Demo"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
