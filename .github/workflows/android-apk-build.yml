@@ -30,8 +30,8 @@ jobs:
         run: flutter pub get
       - name: Analyze Dart errors
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
-      - name: Test read-only status connection
-        run: flutter test test/engine_status_client_test.dart
+      - name: Test complete Flutter suite
+        run: flutter test
       - name: Build installable Android debug APK
         run: flutter build apk --debug
       - name: Verify APK integrity and record SHA-256
