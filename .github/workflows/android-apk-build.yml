@@ -1,0 +1,66 @@
+name: Build Emtifize AI Demo Android APK
+
+on:
+  pull_request:
+    paths:
+      - "apex_trade/**"
+      - ".github/workflows/android-apk-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android-demo:
+    name: Test and build signed debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: apex_trade
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Report Flutter and Dart versions
+        run: flutter --version
+      - name: Restore packages
+        run: flutter pub get
+      - name: Analyze Dart errors
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Test read-only status connection
+        run: flutter test test/engine_status_client_test.dart
+      - name: Build installable Android debug APK
+        run: flutter build apk --debug
+      - name: Verify APK integrity and record SHA-256
+        run: |
+          python - <<'PY'
+          import hashlib, pathlib, zipfile
+          path = pathlib.Path('build/app/outputs/flutter-apk/app-debug.apk')
+          assert path.exists(), 'Flutter did not produce an APK'
+          assert path.stat().st_size > 1000000, 'Suspiciously small APK'
+          with zipfile.ZipFile(path) as z:
+              assert z.testzip() is None, 'Corrupt APK ZIP'
+              names = set(z.namelist())
+              assert 'AndroidManifest.xml' in names, 'Missing Android manifest'
+              assert 'classes.dex' in names, 'Missing compiled Android classes'
+          digest = hashlib.sha256(path.read_bytes()).hexdigest()
+          filename = pathlib.Path('Emtifize-AI-Demo-Android-debug.apk')
+          filename.write_bytes(path.read_bytes())
+          pathlib.Path('Emtifize-AI-Demo-Android-debug.sha256').write_text(
+              digest + '  ' + filename.name + '\\n'
+          )
+          print('APK:', filename, 'bytes:', filename.stat().st_size)
+          print('SHA256:', digest)
+          PY
+      - name: Upload installable APK and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: Emtifize-AI-Android-Demo-APK
+          path: |
+            apex_trade/Emtifize-AI-Demo-Android-debug.apk
+            apex_trade/Emtifize-AI-Demo-Android-debug.sha256
+          if-no-files-found: error
+          retention-days: 30
