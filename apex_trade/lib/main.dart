@@ -43,7 +43,7 @@ class ApexTradeApp extends ConsumerWidget {
 
     return MaterialApp.router(
       // App identity
-      title: 'APEX Trade',
+      title: 'Emtifize AI Demo',
       debugShowCheckedModeBanner: false,
 
       // Our premium dark theme

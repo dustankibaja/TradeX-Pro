@@ -34,7 +34,44 @@ class MainShell extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bg0,
-      body: child,
+      body: Column(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Material(
+              color: const Color(0xFF292119),
+              child: InkWell(
+                onTap: () => context.push(AppRoutes.engineStatus),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded,
+                          size: 18, color: Colors.amberAccent),
+                      SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          'DEMO DATA ONLY • View real engine status',
+                          style: TextStyle(
+                            color: Colors.amberAccent,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded,
+                          size: 19, color: Colors.amberAccent),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(child: child),
+        ],
+      ),
       bottomNavigationBar: _ApexBottomNav(
         currentIndex: currentIndex,
         onTap: (i) => _onTap(context, i),

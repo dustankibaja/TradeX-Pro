@@ -13,7 +13,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen>
     with SingleTickerProviderStateMixin {
   // Toggle states
-  bool _autoTrading = true;
+  bool _autoTrading = false; // UI cannot enable the unvalidated engine
   bool _newSignals = true;
   bool _tpSlAlerts = true;
   bool _sessionReminders = false;
@@ -117,11 +117,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                     _ToggleItem(
                       icon: Icons.smart_toy_rounded,
                       iconBg: AppColors.green,
-                      title: 'Auto-Trading',
-                      subtitle: 'Execute signals automatically',
+                      title: 'Auto-Trading (locked)',
+                      subtitle: 'Disabled until engine and strategy certification',
                       value: _autoTrading,
-                      onChanged: (v) =>
-                          setState(() => _autoTrading = v),
+                      enabled: false,
+                      onChanged: (v) {},
                     ),
                     _SliderItem(
                       icon: Icons.shield_rounded,
@@ -421,6 +421,7 @@ class _ToggleItem extends StatelessWidget {
   final String? subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final bool enabled;
 
   const _ToggleItem({
     required this.icon,
@@ -429,6 +430,7 @@ class _ToggleItem extends StatelessWidget {
     this.subtitle,
     required this.value,
     required this.onChanged,
+    this.enabled = true,
   });
 
   @override
@@ -476,7 +478,7 @@ class _ToggleItem extends StatelessWidget {
             ),
           ),
           GestureDetector(
-            onTap: () => onChanged(!value),
+            onTap: enabled ? () => onChanged(!value) : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               width: 44,
