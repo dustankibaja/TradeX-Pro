@@ -5,6 +5,7 @@ import '../../features/splash/splash_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/auth/auth_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
+import '../../features/engine_status/engine_status_screen.dart';
 import '../../features/signals/signals_screen.dart';
 import '../../features/chart/chart_screen.dart';
 import '../../features/analytics/analytics_screen.dart';
@@ -29,6 +30,7 @@ class AppRoutes {
   static const profile = '/profile';
   static const subscription = '/subscription';
   static const settings = '/settings';
+  static const engineStatus = '/engine-status';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -53,6 +55,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.auth,
         pageBuilder: (context, state) => _fadePage(
           state, const AuthScreen(),
+        ),
+      ),
+
+      // Engine pairing is independent of the demo bottom navigation.
+      GoRoute(
+        path: AppRoutes.engineStatus,
+        pageBuilder: (context, state) => _fadePage(
+          state, const EngineStatusScreen(),
         ),
       ),
 
