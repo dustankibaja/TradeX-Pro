@@ -1,0 +1,28 @@
+name: Flutter engine status read-only tests
+
+on:
+  pull_request:
+    paths:
+      - "apex_trade/lib/**"
+      - "apex_trade/test/**"
+      - "apex_trade/pubspec.yaml"
+      - ".github/workflows/flutter-engine-status-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  test-engine-connection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apex_trade
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+      - name: Test authenticated read-only client
+        run: flutter test test/engine_status_client_test.dart
