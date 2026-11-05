@@ -6,6 +6,8 @@ import '../../core/theme/app_theme.dart';
 import 'demo_account_client.dart';
 import 'demo_control_client.dart';
 import 'engine_status_client.dart';
+import 'saved_pairing.dart';
+import 'scan_pairing_screen.dart';
 
 /// One private console: pair, monitor broker DEMO account, pause/resume
 /// demo signal simulation. Broker order execution is never exposed.
@@ -16,13 +18,15 @@ class EngineStatusScreen extends StatefulWidget {
   State<EngineStatusScreen> createState() => _EngineStatusScreenState();
 }
 
-class _EngineStatusScreenState extends State<EngineStatusScreen> {
+class _EngineStatusScreenState extends State<EngineStatusScreen>
+    with WidgetsBindingObserver {
   final _url = TextEditingController();
   final _readToken = TextEditingController();
   final _controlToken = TextEditingController();
   final _statusClient = EngineStatusClient();
   final _accountClient = DemoAccountClient();
   final _controlClient = DemoControlClient();
+  final _pairingStore = const PairingStore();
 
   Timer? _timer;
   EngineStatus? _status;
@@ -33,9 +37,106 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
   bool _showConnection = true;
   bool _checking = false;
   bool _changingState = false;
+  bool _pairingSaved = false;
+  bool _restoring = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _restorePairing();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_paired && !_showConnection) {
+        _startAutoRefresh();
+        _refresh();
+      }
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  void _startAutoRefresh() {
+    _timer ??= Timer.periodic(
+      const Duration(seconds: 15), (_) => _refresh(),
+    );
+  }
+
+  Future<void> _restorePairing() async {
+    try {
+      final stored = await _pairingStore.load();
+      if (!mounted) return;
+      if (stored != null) {
+        _url.text = stored.url;
+        _readToken.text = stored.readToken;
+        _controlToken.text = stored.controlToken;
+        setState(() {
+          _paired = true;
+          _showConnection = false;
+          _pairingSaved = true;
+        });
+        _startAutoRefresh();
+        await _refresh();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error =
+            'Saved pairing unavailable. Scan your Windows QR again.');
+      }
+    } finally {
+      if (mounted) setState(() => _restoring = false);
+    }
+  }
+
+  Future<void> _scanPairing() async {
+    final scanned = await Navigator.push<SavedPairing>(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanPairingScreen()),
+    );
+    if (scanned == null || !mounted) return;
+    _url.text = scanned.url;
+    _readToken.text = scanned.readToken;
+    _controlToken.text = scanned.controlToken;
+    setState(() {
+      _error = null;
+      _pairingSaved = false;
+    });
+    await _refresh();
+  }
+
+  Future<void> _forgetPairing() async {
+    _timer?.cancel();
+    _timer = null;
+    try {
+      await _pairingStore.forget();
+    } catch (_) {
+      if (mounted) setState(() =>
+          _error = 'Could not clear encrypted pairing. Try again.');
+      return;
+    }
+    _url.clear();
+    _readToken.clear();
+    _controlToken.clear();
+    if (!mounted) return;
+    setState(() {
+      _paired = false;
+      _showConnection = true;
+      _pairingSaved = false;
+      _status = null;
+      _account = null;
+      _error = null;
+    });
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     _url.dispose();
     _readToken.clear();
@@ -83,10 +184,22 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
         _account = account;
         _controlError = brokerError;
       });
-      _timer ??= Timer.periodic(
-        const Duration(seconds: 15),
-        (_) => _refresh(),
-      );
+      _startAutoRefresh();
+      if (!_pairingSaved) {
+        try {
+          await _pairingStore.save(SavedPairing(
+            url: _url.text.trim(),
+            readToken: _readToken.text.trim(),
+            controlToken: _controlToken.text.trim(),
+          ));
+          if (mounted) setState(() => _pairingSaved = true);
+        } catch (_) {
+          if (mounted) {
+            setState(() => _controlError =
+                'Connected, but secure save failed. Re-pair may be needed after restart.');
+          }
+        }
+      }
     } on FormatException catch (e) {
       if (!mounted) return;
       setState(() {
