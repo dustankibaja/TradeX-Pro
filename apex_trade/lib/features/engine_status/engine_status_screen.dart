@@ -282,6 +282,7 @@ class _EngineStatusScreenState extends State<EngineStatusScreen>
     setState(() {
       _paired = false;
       _showConnection = true;
+      _pairingSaved = false;
       _status = null;
       _account = null;
       _error = null;
@@ -351,8 +352,17 @@ class _EngineStatusScreenState extends State<EngineStatusScreen>
           style: TextStyle(color: AppColors.text1, fontSize: 17,
             fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
-        const Text('Private HTTPS over Tailscale · tokens stay in this app session',
+        const Text('Scan once, then this phone remembers your bot securely.',
           style: TextStyle(color: AppColors.text3, fontSize: 12)),
+        const SizedBox(height: 20),
+        FilledButton.icon(
+          onPressed: _checking ? null : _scanPairing,
+          icon: const Icon(Icons.qr_code_scanner_rounded),
+          label: const Text('Scan QR on Windows PC'),
+        ),
+        const SizedBox(height: 13),
+        const Center(child: Text('or enter connection details manually',
+          style: TextStyle(color: AppColors.text3, fontSize: 12))),
         const SizedBox(height: 20),
         _label('Private API address'),
         TextField(
@@ -397,6 +407,10 @@ class _EngineStatusScreenState extends State<EngineStatusScreen>
           const SizedBox(height: 12),
           Text(_error!, style: const TextStyle(color: AppColors.red)),
         ],
+        const SizedBox(height: 10),
+        const Text('After a successful connection, encrypted pairing is '
+          'saved on this Android device. It will reconnect on future opens.',
+          style: TextStyle(color: AppColors.text3, fontSize: 12)),
       ],
     ),
   );
@@ -737,6 +751,11 @@ class _EngineStatusScreenState extends State<EngineStatusScreen>
               ),
             ]),
             const SizedBox(height: 22),
+            if (_restoring)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: LinearProgressIndicator(),
+              ),
             if (_showConnection) ...[
               _connectionPanel(),
               const SizedBox(height: 16),
@@ -751,6 +770,12 @@ class _EngineStatusScreenState extends State<EngineStatusScreen>
               _tradesPanel(),
               const SizedBox(height: 12),
             ],
+            if (_paired)
+              TextButton.icon(
+                onPressed: _forgetPairing,
+                icon: const Icon(Icons.link_off_rounded, size: 18),
+                label: const Text('Forget this bot on my phone'),
+              ),
             const SizedBox(height: 8),
             const Text(
               'DEMO dry-run only · No broker orders or funded trading '
