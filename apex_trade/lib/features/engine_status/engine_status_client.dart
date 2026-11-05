@@ -10,6 +10,9 @@ class EngineStatus {
   final String mode;
   final bool stale;
   final bool tradingEnabled;
+  final bool demoGuarded;
+  final bool remotePaused;
+  final bool remoteControlAvailable;
   final String? updatedAt;
   final String? strategy;
   final List<String> symbols;
@@ -19,6 +22,9 @@ class EngineStatus {
     required this.mode,
     required this.stale,
     required this.tradingEnabled,
+    this.demoGuarded = false,
+    this.remotePaused = false,
+    this.remoteControlAvailable = false,
     this.updatedAt,
     this.strategy,
     required this.symbols,
@@ -39,6 +45,9 @@ class EngineStatus {
       mode: mode,
       stale: payload['stale'] as bool,
       tradingEnabled: payload['stale'] == true ? false : payload['trading_enabled'] as bool,
+      demoGuarded: payload['demo_guarded'] == true,
+      remotePaused: payload['remote_paused'] == true,
+      remoteControlAvailable: payload['remote_control_available'] == true,
       updatedAt: payload['updated_at'] as String?,
       strategy: payload['strategy'] as String?,
       symbols: (payload['symbols'] as List<dynamic>? ?? [])
