@@ -449,7 +449,7 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
 
   Widget _portfolioPanel() {
     final account = _account;
-    final available = account?.available == true && !account!.stale;
+    final available = account != null && account.available && !account.stale;
     return _surface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,21 +473,21 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
             )
           else ...[
             Row(children: [
-              _metric('Balance', _money(account.balance, account.currency)),
+              _metric('Balance', _money(account?.balance, account?.currency)),
               const SizedBox(width: 10),
-              _metric('Equity', _money(account.equity, account.currency)),
+              _metric('Equity', _money(account?.equity, account?.currency)),
             ]),
             const SizedBox(height: 22),
             Row(children: [
               _metric('Floating P&L',
-                _money(account.floatingPnl, account.currency),
-                color: _pnlColor(account.floatingPnl)),
+                _money(account?.floatingPnl, account?.currency),
+                color: _pnlColor(account?.floatingPnl)),
               const SizedBox(width: 10),
               _metric('Free margin',
-                _money(account.freeMargin, account.currency)),
+                _money(account?.freeMargin, account?.currency)),
             ]),
             const SizedBox(height: 10),
-            Text('Broker sync: ' + _time(account.updatedAt),
+            Text('Broker sync: ' + _time(account?.updatedAt),
               style: const TextStyle(color: AppColors.text3, fontSize: 11)),
           ],
         ],
