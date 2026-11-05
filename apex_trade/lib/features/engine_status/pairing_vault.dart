@@ -54,8 +54,8 @@ class PairingVault {
     try {
       final safeUrl = PairingCredentials.validateUrl(url);
       if (!PairingCredentials.isStrongToken(read) ||
-          !PairingCredentials.isStrongToken(control) ||
-          read == control) {
+          (control.isNotEmpty && !PairingCredentials.isStrongToken(control)) ||
+          (control.isNotEmpty && read == control)) {
         return null;
       }
       return PairingCredentials(
