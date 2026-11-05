@@ -12,7 +12,8 @@ void main() {
     expect(find.text('Emtifize AI'), findsOneWidget);
     expect(find.text('Private bot control center'), findsOneWidget);
     expect(find.text('Connect securely'), findsOneWidget);
-    expect(find.text('DISCONNECTED'), findsOneWidget);
+    expect(find.text('Scan QR on Windows PC'), findsOneWidget);
+    expect(find.text('Connect your Windows bot'), findsOneWidget);
     expect(find.text('Signals'), findsNothing);
     expect(find.text('Subscription'), findsNothing);
     expect(find.text('Trade now'), findsNothing);
