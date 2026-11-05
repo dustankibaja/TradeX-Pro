@@ -8,6 +8,8 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(home: EngineStatusScreen()),
     );
+    // Startup checks encrypted local storage before showing the pairing form.
+    await tester.pumpAndSettle();
 
     expect(find.text('Emtifize AI'), findsOneWidget);
     expect(find.text('Private bot control center'), findsOneWidget);
