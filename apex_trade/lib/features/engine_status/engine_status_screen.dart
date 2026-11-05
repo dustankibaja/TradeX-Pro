@@ -6,6 +6,9 @@ import '../../core/theme/app_theme.dart';
 import 'demo_account_client.dart';
 import 'demo_control_client.dart';
 import 'engine_status_client.dart';
+import 'pairing_credentials.dart';
+import 'pairing_scanner_screen.dart';
+import 'pairing_vault.dart';
 
 /// One private console: pair, monitor broker DEMO account, pause/resume
 /// demo signal simulation. Broker order execution is never exposed.
@@ -16,13 +19,15 @@ class EngineStatusScreen extends StatefulWidget {
   State<EngineStatusScreen> createState() => _EngineStatusScreenState();
 }
 
-class _EngineStatusScreenState extends State<EngineStatusScreen> {
+class _EngineStatusScreenState extends State<EngineStatusScreen>
+    with WidgetsBindingObserver {
   final _url = TextEditingController();
   final _readToken = TextEditingController();
   final _controlToken = TextEditingController();
   final _statusClient = EngineStatusClient();
   final _accountClient = DemoAccountClient();
   final _controlClient = DemoControlClient();
+  final _pairingVault = const PairingVault(storage: AndroidPairingSecretStore());
 
   Timer? _timer;
   EngineStatus? _status;
@@ -33,9 +38,59 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
   bool _showConnection = true;
   bool _checking = false;
   bool _changingState = false;
+  bool _restoring = true;
+  bool _saveAfterConnect = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restorePairing());
+  }
+
+  Future<void> _restorePairing() async {
+    PairingCredentials? saved;
+    try {
+      saved = await _pairingVault.load();
+    } catch (_) {
+      // Keystore invalidation / unavailable storage: fail closed, allow re-pair.
+    }
+    if (!mounted) return;
+    if (saved != null) {
+      _url.text = saved.url;
+      _readToken.text = saved.readToken;
+      _controlToken.text = saved.controlToken;
+    }
+    setState(() {
+      _restoring = false;
+      if (saved != null) {
+        _paired = true;
+        _showConnection = false;
+      }
+    });
+    if (saved != null) await _refresh();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // The Windows bot runs independently. Refresh immediately on return.
+      if (_paired && _readToken.text.isNotEmpty) {
+        _timer ??= Timer.periodic(
+          const Duration(seconds: 15), (_) => _refresh(),
+        );
+        _refresh();
+      }
+    } else {
+      // No battery-heavy background polling: reopen reconnects automatically.
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     _url.dispose();
     _readToken.clear();
@@ -75,6 +130,21 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
         }
       }
 
+      if (!mounted) return;
+      if (_saveAfterConnect) {
+        try {
+          await _pairingVault.save(PairingCredentials(
+            url: PairingCredentials.validateUrl(_url.text),
+            readToken: _readToken.text.trim(),
+            controlToken: _controlToken.text.trim(),
+          ));
+          _saveAfterConnect = false;
+        } catch (_) {
+          // Never claim pairing was saved if encrypted storage failed.
+          _error = 'Connected, but encrypted storage failed. Re-pair after restart.';
+          _saveAfterConnect = false;
+        }
+      }
       if (!mounted) return;
       setState(() {
         _paired = true;
@@ -163,6 +233,101 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
     }
   }
 
+  Future<void> _connectAndRemember() async {
+    try {
+      final sanitized = PairingCredentials.validateUrl(_url.text);
+      if (!PairingCredentials.isStrongToken(_readToken.text.trim()) ||
+          (_controlToken.text.trim().isNotEmpty &&
+           !PairingCredentials.isStrongToken(_controlToken.text.trim())) ||
+          (_controlToken.text.trim().isNotEmpty &&
+           _readToken.text.trim() == _controlToken.text.trim())) {
+        throw const FormatException('Enter valid, distinct private pairing tokens.');
+      }
+      _url.text = sanitized;
+    } on FormatException catch (e) {
+      setState(() => _error = e.message);
+      return;
+    }
+    _saveAfterConnect = true;
+    await _refresh();
+  }
+
+  Future<void> _scanPairing() async {
+    final candidate = await Navigator.of(context).push<PairingCredentials>(
+      MaterialPageRoute(builder: (_) => const PairingScannerScreen()),
+    );
+    if (!mounted || candidate == null) return;
+    final host = Uri.parse(candidate.url).host;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Trust this Windows computer?'),
+        content: Text('Pair Emtifize AI with $host? '
+            'The QR grants access to demo balances and simulation controls. '
+            'Only scan QR codes displayed by your own PC.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Pair this PC'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    _url.text = candidate.url;
+    _readToken.text = candidate.readToken;
+    _controlToken.text = candidate.controlToken;
+    await _connectAndRemember();
+  }
+
+  Future<void> _forgetPairing() async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Forget this Windows bot?'),
+        content: const Text('This removes saved pairing keys from this phone. '
+            'It does not stop the Windows worker or change its safety switch.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Forget pairing'),
+          ),
+        ],
+      ),
+    );
+    if (accepted != true || !mounted) return;
+    try {
+      await _pairingVault.forget();
+    } catch (_) {
+      if (mounted) setState(() => _error =
+          'Could not clear encrypted keys. Check device security settings.');
+      return;
+    }
+    _timer?.cancel();
+    _timer = null;
+    _url.clear();
+    _readToken.clear();
+    _controlToken.clear();
+    _saveAfterConnect = false;
+    if (!mounted) return;
+    setState(() {
+      _paired = false;
+      _showConnection = true;
+      _status = null;
+      _account = null;
+      _error = null;
+      _controlError = null;
+    });
+  }
+
   void _editConnection() {
     _timer?.cancel();
     _timer = null;
@@ -238,9 +403,18 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
           style: TextStyle(color: AppColors.text1, fontSize: 17,
             fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
-        const Text('Private HTTPS over Tailscale · tokens stay in this app session',
+        const Text('One scan to pair · encrypted credentials stay on this phone',
           style: TextStyle(color: AppColors.text3, fontSize: 12)),
         const SizedBox(height: 20),
+        OutlinedButton.icon(
+          onPressed: _checking ? null : _scanPairing,
+          icon: const Icon(Icons.qr_code_scanner_rounded),
+          label: const Text('Scan QR from Windows'),
+        ),
+        const SizedBox(height: 18),
+        const Text('Or enter details manually',
+          style: TextStyle(color: AppColors.text3, fontSize: 12)),
+        const SizedBox(height: 16),
         _label('Private API address'),
         TextField(
           controller: _url,
@@ -273,7 +447,7 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
         ),
         const SizedBox(height: 20),
         FilledButton.icon(
-          onPressed: _checking ? null : _refresh,
+          onPressed: _checking ? null : _connectAndRemember,
           icon: _checking
             ? const SizedBox(height: 18, width: 18,
                 child: CircularProgressIndicator(strokeWidth: 2))
@@ -616,6 +790,12 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
                   fontSize: 11, color: AppColors.green,
                   fontWeight: FontWeight.w800)),
               ),
+              if (_paired) IconButton(
+                tooltip: 'Forget saved pairing on this device',
+                onPressed: _forgetPairing,
+                icon: const Icon(Icons.phonelink_erase_rounded,
+                  color: AppColors.text2),
+              ),
               IconButton(
                 tooltip: 'Connection settings',
                 onPressed: _editConnection,
@@ -624,7 +804,12 @@ class _EngineStatusScreenState extends State<EngineStatusScreen> {
               ),
             ]),
             const SizedBox(height: 22),
-            if (_showConnection) ...[
+            if (_restoring) ...[
+              const Center(child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(),
+              )),
+            ] else if (_showConnection) ...[
               _connectionPanel(),
               const SizedBox(height: 16),
             ],
