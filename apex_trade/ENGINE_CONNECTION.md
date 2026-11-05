@@ -1,77 +1,50 @@
-# Emtifize AI v1.2 — single-screen private DEMO bot console
+# Emtifize AI v1.3 — scan once, remember bot, auto-reconnect
 
-This replaces the old fake trading platform with **one purpose-built screen**.
-No onboarding, profile, subscription, fake charts/signals, demo numbers,
-or bottom navigation. No account login required: the Windows MT5 account
-is the identity; an HTTPS pairing secret provides private access.
+Android app now uses **encrypted Keystore-backed pairing persistence** and in-app QR scanning.
+No account balances, trade history or broker credentials are saved offline.
 
-## Visible features
+## First-time connection
 
-1. **Connection**: HTTPS Tailscale Serve hostname; separate read-only and
-   control tokens, both held in screen memory only and cleared on exit.
-   Connection fields collapse after a successful pairing and can be reopened.
-2. **Engine**: real authenticated worker status / demo guard / strategy /
-   symbol(s) / last heartbeat. Automatic refresh every 15s while screen open.
-3. **DEMO signal controls**: independent control token required. PAUSE
-   signals immediately, RESUME only after the phone confirms intent and
-   Windows checks the fresh broker DEMO identity, dry_run, and demo snapshot.
-   The Windows manual `KILL_SWITCH` is NEVER cleared by phone controls.
-4. **Account**: broker-reported DEMO balance, equity, free margin, floating
-   P&L; collapsible open positions and last seven days' closing deals.
-   No demo values are invented. On network failure, figures are hidden.
+1. Update Windows backend to `feature/persistent-qr-pairing-2026-11`.
+2. Install its pinned QR dependency with `.\.venv\Scripts\python.exe -m pip install -r requirements.txt`.
+3. Keep MetaTrader 5 on your DEMO account, and Tailscale Serve enabled privately.
+4. Restart `scripts/start_demo_phone_bridge.ps1`. It creates or reloads two
+   encrypted Windows DPAPI credentials. On a connected Windows desktop,
+   a PRIVATE local pairing QR window appears automatically. It is not saved to disk.
+5. On Android, install Emtifize v1.3 APK. Tap **Scan QR on Windows PC**, grant
+   camera permission and scan the screen. The app verifies a private HTTPS
+   Tailscale address and distinct strong secrets before connecting.
+6. Close the QR window. It is a secret equivalent to read/control passwords:
+   do NOT screenshot, share or upload it.
 
-**Scope: Pausing or resuming signal *simulation* only.**
-The worker stays `--dry-run --require-demo`; NO trades are ever placed
-by the app, even on the broker demo account. This is not a remote trade order
-terminal. Strategy profitability remains unproven.
+Manual HTTPS host and token fields remain available when camera is unavailable.
 
-## Windows v3 pairing and restart (existing user)
+## Future app launches
 
-From `C:\Users\WingerAPP\mt5-forex-trading-bot\mt5-ai-bot` in PowerShell:
+- A successful pairing is encrypted on the phone with `flutter_secure_storage`.
+- The app loads the host and secrets automatically at launch, gets the most
+  recent status and demo portfolio, and rechecks every 15 seconds while visible.
+- On returning from background, it makes a fresh request immediately.
+- When the PC, MT5, Tailscale or backend is offline, the app shows
+  DISCONNECTED and does not show stale broker values, but **retains pairing**
+  and retries next time. Its connection is not a permanently running background socket.
+- The Windows bridge **reuses encrypted secrets** on the same Windows account
+  across restarts. It does NOT generate new passwords every time.
+- In settings, **Forget this bot** deletes the saved encrypted pairing.
+- Reinstalling app or clearing app data can erase stored pairing because Android
+  backup is intentionally disabled. Re-scan if required.
 
-- Stop the previous worker/API processes after verifying their command line.
-- Make sure there are no unexpected uncommitted code edits: `git status --short`.
-- Because the original clone was single-branch, fetch v3 directly via fast-forward
-  from its parent v2 code branch:
+## Reality and security
 
-```powershell
-git pull --ff-only origin feature/safe-demo-control-2026-11
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_demo_phone_bridge.ps1
-```
+True availability over days requires an ON Windows PC or VPS with MT5 and
+the backend running, plus a connected private Tailscale tailnet. The Flutter
+app alone cannot maintain a stopped engine. Android battery restrictions or
+disconnected Tailscale can delay reconnection.
 
-- MT5 desktop must remain signed into an MT5 broker **DEMO** account.
-- The script now generates **TWO DIFFERENT TOKENS**:
-  **READ-ONLY PAIRING TOKEN** and **DEMO CONTROL TOKEN**. Both are
-  private credentials. Do not paste, screenshot or share either in chat.
-- A brand-new bridge starts with **remote pause engaged**.
-  This avoids accidentally resuming even dry-run signal calculations.
-- The existing Tailscale `serve --bg 8787` HTTPS proxy can remain enabled.
-  Use **Serve**, never public Funnel.
-- If readback fails, app money fields remain unavailable. Source-only CI
-  tests cannot prove your Windows broker or Android device is connected.
+The first QR includes BOTH the read token and control token. Guard the physical
+PC screen carefully. In case of exposure, stop bridge, rotate DPAPI secrets,
+then re-pair. Continue to use `--dry-run --require-demo`, and NEVER enable
+funded trading based on these connection tests.
 
-## Android upgrade
-
-- Version `1.2.0+4`, debug APK from the `feature/minimal-bot-console-2026-11`
-  branch's successful Android GitHub workflow.
-- If Android cannot update due to a different debug signing key, uninstall
-  the prior debug app first (this removes local app data), then install v1.2.
-- The new app launches directly to **Emtifize AI**; enter the HTTPS host,
-  read-only token, and separate control token (optional if only monitoring).
-- Tap **Connect securely** to view DEMO status. The Paused/Running control
-  is visible after pairing. Resume requires a confirmation.
-- Keep Windows, MT5, and Tailscale running on both devices.
-
-## Security limitations
-
-- Tailscale private HTTPS transport, two long random tokens, Windows
-  DEMO-only guards; still a single-operator prototype, not
-  enterprise-grade user/account authentication.
-- No public port 8787, no order execution endpoints, no password or MT5
-  login supplied to Flutter or GitHub.
-- No persisted pairing secrets. Re-enter on new app launch.
-- Broker snapshots include private DEMO account financial data;
-  keep Tailscale access restricted to your own devices.
-- Emergency manual Windows kill switch always wins.
-- Never enable funded-account trading until strategy testing and
-  independent live demo forward performance justify it.
+App source branch: `feature/secure-auto-reconnect-2026-11`.
+Windows source branch: `feature/persistent-qr-pairing-2026-11`.
