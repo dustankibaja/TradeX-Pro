@@ -1,67 +1,77 @@
-# Emtifize AI — v2 MT5 read-only DEMO account dashboard
+# Emtifize AI v1.2 — single-screen private DEMO bot console
 
-This branch extends the successful phone-to-engine heartbeat integration. A verified Windows MT5 DEMO worker now captures broker-reported balance, equity, free margin, floating P&L, open positions, and recent **closing deals**. These are shown only on the dedicated Trading engine screen. Other original trading screens still contain clearly marked sample data.
+This replaces the old fake trading platform with **one purpose-built screen**.
+No onboarding, profile, subscription, fake charts/signals, demo numbers,
+or bottom navigation. No account login required: the Windows MT5 account
+is the identity; an HTTPS pairing secret provides private access.
 
-## Integration with MT5 AI Bot
-Server implementation: `dustankibaja/mt5-forex-trading-bot`
-branch `feature/read-only-status-api-2026-11`.
+## Visible features
 
-1. On a Windows computer with MT5 and Python, run the engine in dry-run:
-   `python scripts/run_live.py --dry-run`.
-2. Set `BOT_STATUS_READ_TOKEN` to a securely random 32+ character value.
-3. Run `python scripts/serve_status.py` from `mt5-ai-bot/`.
-4. Use a **private, trusted HTTPS reverse proxy or VPN tunnel** to reach the
-   loopback-only `http://127.0.0.1:8787/v1/status` API.
-5. In Flutter, tap the orange DEMO DATA banner, enter the HTTPS base URL
-   and **read-only** pairing token, then tap Check connection.
+1. **Connection**: HTTPS Tailscale Serve hostname; separate read-only and
+   control tokens, both held in screen memory only and cleared on exit.
+   Connection fields collapse after a successful pairing and can be reopened.
+2. **Engine**: real authenticated worker status / demo guard / strategy /
+   symbol(s) / last heartbeat. Automatic refresh every 15s while screen open.
+3. **DEMO signal controls**: independent control token required. PAUSE
+   signals immediately, RESUME only after the phone confirms intent and
+   Windows checks the fresh broker DEMO identity, dry_run, and demo snapshot.
+   The Windows manual `KILL_SWITCH` is NEVER cleared by phone controls.
+4. **Account**: broker-reported DEMO balance, equity, free margin, floating
+   P&L; collapsible open positions and last seven days' closing deals.
+   No demo values are invented. On network failure, figures are hidden.
 
-The token is only stored in memory for that screen and never committed
-or embedded in an APK. No trade placement, risk change, start/stop or
-broker credential entry is possible. This is intentionally single-operator
-proof-of-integration, **not** a multiuser commercial authentication system.
+**Scope: Pausing or resuming signal *simulation* only.**
+The worker stays `--dry-run --require-demo`; NO trades are ever placed
+by the app, even on the broker demo account. This is not a remote trade order
+terminal. Strategy profitability remains unproven.
 
-## Integrity and presentation rules
-- Status is reported OFFLINE if the heartbeat is more than 30 seconds old.
-- Error and unauthorized states are visible; failures are not silently
-  treated as online.
-- The app displays a persistent DEMO DATA banner over every existing
-  trading screen because their balances, signals, charts and analytics
-  are still mocked. Auto-trading toggle is locked OFF.
-- For production, require OIDC/OAuth, short-lived bearer scopes, TLS,
-  token rotation, device revocation, observability and broker reconciliation.
-- Never expose the raw Python status port to the Internet.
-- Do not trade on a funded account before successful independent
-  strategy and MT5 demo forward validation.
+## Windows v3 pairing and restart (existing user)
 
+From `C:\Users\WingerAPP\mt5-forex-trading-bot\mt5-ai-bot` in PowerShell:
 
-## v2 demo-account upgrade (required on BOTH Windows and Android)
+- Stop the previous worker/API processes after verifying their command line.
+- Make sure there are no unexpected uncommitted code edits: `git status --short`.
+- Because the original clone was single-branch, fetch v3 directly via fast-forward
+  from its parent v2 code branch:
 
-- Windows bot source: `dustankibaja/mt5-forex-trading-bot`, branch
-  `feature/read-only-demo-account-2026-11`, based on the previously
-  working `feature/demo-phone-pairing-2026-11`.
-- Android app source: `dustankibaja/TradeX-Pro`, branch
-  `feature/real-demo-dashboard-2026-11`, APK version `1.0.1+2`.
-- API adds **authenticated GET /v1/demo-account** alongside /v1/status.
-  It returns allowlisted DEMO financial figures only while the worker
-  reports fresh `dry_run` status; all write verbs remain rejected.
-- The source worker fetches MT5 data in the same authenticated DEMO
-  terminal context, never from Flutter. Neither broker passwords,
-  account numbers, server names, tickets, comments nor credentials
-  are serialized to the API. Account change, broker disconnection,
-  stop, unexpected data, or stale data hide all account figures.
-- Phone screen polls every 15 seconds while visible, and replaces
-  figures with unavailable on disconnection. Pairing token remains
-  in screen memory only and is cleared when leaving the screen.
-- The app shows the latest 20 positions and 20 closing **deal records**
-  within a 7-day lookback; not a reconstructed win rate or full
-  strategy journal. Existing manual demo trades may appear; the bot
-  itself stays `--dry-run` and does NOT place trades.
-- If Android installation fails due to a different GitHub Actions
-  debug signing key, uninstall the prior Emtifize AI Demo version
-  and install the new APK. This clears the old temporary pairing
-  fields. Re-enter the new token and tailnet URL.
-- Never deploy a funded account, disclose token, or expose the
-  local Python port to the public Internet.
+```powershell
+git pull --ff-only origin feature/safe-demo-control-2026-11
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_demo_phone_bridge.ps1
+```
 
-The API and Flutter client use HTTPS-over-Tailscale Serve only. A
-screen showing RUNNING does not prove strategy profitability.
+- MT5 desktop must remain signed into an MT5 broker **DEMO** account.
+- The script now generates **TWO DIFFERENT TOKENS**:
+  **READ-ONLY PAIRING TOKEN** and **DEMO CONTROL TOKEN**. Both are
+  private credentials. Do not paste, screenshot or share either in chat.
+- A brand-new bridge starts with **remote pause engaged**.
+  This avoids accidentally resuming even dry-run signal calculations.
+- The existing Tailscale `serve --bg 8787` HTTPS proxy can remain enabled.
+  Use **Serve**, never public Funnel.
+- If readback fails, app money fields remain unavailable. Source-only CI
+  tests cannot prove your Windows broker or Android device is connected.
+
+## Android upgrade
+
+- Version `1.2.0+4`, debug APK from the `feature/minimal-bot-console-2026-11`
+  branch's successful Android GitHub workflow.
+- If Android cannot update due to a different debug signing key, uninstall
+  the prior debug app first (this removes local app data), then install v1.2.
+- The new app launches directly to **Emtifize AI**; enter the HTTPS host,
+  read-only token, and separate control token (optional if only monitoring).
+- Tap **Connect securely** to view DEMO status. The Paused/Running control
+  is visible after pairing. Resume requires a confirmation.
+- Keep Windows, MT5, and Tailscale running on both devices.
+
+## Security limitations
+
+- Tailscale private HTTPS transport, two long random tokens, Windows
+  DEMO-only guards; still a single-operator prototype, not
+  enterprise-grade user/account authentication.
+- No public port 8787, no order execution endpoints, no password or MT5
+  login supplied to Flutter or GitHub.
+- No persisted pairing secrets. Re-enter on new app launch.
+- Broker snapshots include private DEMO account financial data;
+  keep Tailscale access restricted to your own devices.
+- Emergency manual Windows kill switch always wins.
+- Never enable funded-account trading until strategy testing and
+  independent live demo forward performance justify it.
