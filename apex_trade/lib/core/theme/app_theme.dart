@@ -19,6 +19,7 @@ class AppColors {
 class AppTheme {
   static ThemeData get dark => ThemeData(
     useMaterial3: true,
+    splashFactory: InkRipple.splashFactory,
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.bg0,
     colorScheme: const ColorScheme.dark(
@@ -28,10 +29,16 @@ class AppTheme {
       error: AppColors.red,
     ),
     textTheme: const TextTheme(
-      headlineMedium: TextStyle(color: AppColors.text1,
-          fontSize: 24, fontWeight: FontWeight.w700),
-      titleLarge: TextStyle(color: AppColors.text1,
-          fontSize: 18, fontWeight: FontWeight.w700),
+      headlineMedium: TextStyle(
+        color: AppColors.text1,
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+      ),
+      titleLarge: TextStyle(
+        color: AppColors.text1,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
       bodyMedium: TextStyle(color: AppColors.text2, fontSize: 14),
     ),
     inputDecorationTheme: InputDecorationTheme(
