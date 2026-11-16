@@ -29,8 +29,8 @@ jobs:
       - name: Build local onboarding safety service
         working-directory: backend/mt5-ai-bot
         run: |
-          python -m pip install --disable-pip-version-check "MetaTrader5>=5.0.4682,<6.0" "pyinstaller==6.16.0"
-          pyinstaller --noconfirm --clean --onefile --name emtifize-onboarding --paths . scripts/product_onboarding.py
+          python -m pip install --disable-pip-version-check "numpy==1.26.4" "MetaTrader5>=5.0.4682,<6.0" "pyinstaller==6.16.0"
+          pyinstaller --noconfirm --clean --onefile --name emtifize-onboarding --paths . --collect-all numpy --collect-all MetaTrader5 scripts/product_onboarding.py
           .\dist\emtifize-onboarding.exe detect | ConvertFrom-Json | Out-Null
       - uses: subosito/flutter-action@v2
         with:

@@ -549,12 +549,15 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
 
   Widget _nav(IconData icon, String label, bool selected) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
-    child: ListTile(
-      leading: Icon(icon),
-      title: Text(label),
-      selected: selected,
-      selectedTileColor: AppColors.accentSoft,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: Material(
+      color: Colors.transparent,
+      child: ListTile(
+        leading: Icon(icon),
+        title: Text(label),
+        selected: selected,
+        selectedTileColor: AppColors.accentSoft,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     ),
   );
 
