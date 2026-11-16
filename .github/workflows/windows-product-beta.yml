@@ -1,0 +1,71 @@
+name: Build Emtifize AI Windows DEMO beta
+
+on:
+  pull_request:
+    paths:
+      - "apex_trade/**"
+      - ".github/workflows/windows-product-beta.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-beta:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Flutter product
+        uses: actions/checkout@v4
+      - name: Checkout pinned Python safety backend
+        uses: actions/checkout@v4
+        with:
+          repository: dustankibaja/mt5-forex-trading-bot
+          ref: product-beta/milestone-a-onboarding
+          path: backend
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build local onboarding safety service
+        working-directory: backend/mt5-ai-bot
+        run: |
+          python -m pip install --disable-pip-version-check "numpy==1.26.4" "MetaTrader5>=5.0.4682,<6.0" "pyinstaller==6.16.0"
+          pyinstaller --noconfirm --clean --onefile --name emtifize-onboarding --paths . --collect-all numpy --collect-all MetaTrader5 scripts/product_onboarding.py
+          .\dist\emtifize-onboarding.exe detect | ConvertFrom-Json | Out-Null
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.7"
+          cache: true
+      - name: Test Flutter product
+        working-directory: apex_trade
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos --no-fatal-warnings
+          flutter test
+      - name: Build Flutter Windows release
+        working-directory: apex_trade
+        run: flutter build windows --release
+      - name: Assemble standalone DEMO beta
+        shell: pwsh
+        run: |
+          $release = Resolve-Path 'apex_trade/build/windows/x64/runner/Release'
+          $stage = Join-Path $env:RUNNER_TEMP 'Emtifize-AI-Windows-DEMO-Beta'
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Copy-Item -Path "$release\*" -Destination $stage -Recurse
+          New-Item -ItemType Directory -Path (Join-Path $stage 'runtime') | Out-Null
+          Copy-Item 'backend/mt5-ai-bot/dist/emtifize-onboarding.exe' (Join-Path $stage 'runtime/emtifize-onboarding.exe')
+          Copy-Item 'apex_trade/BETA_WINDOWS_README.txt' (Join-Path $stage 'README.txt')
+          $zip = Join-Path $PWD 'Emtifize-AI-Windows-DEMO-Beta.zip'
+          Compress-Archive -Path "$stage\*" -DestinationPath $zip
+          $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLowerInvariant()
+          "$hash  Emtifize-AI-Windows-DEMO-Beta.zip" | Set-Content 'Emtifize-AI-Windows-DEMO-Beta.sha256'
+          if ((Get-Item $zip).Length -lt 10000000) { throw 'Suspiciously small Windows beta package' }
+      - name: Upload Windows beta and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: Emtifize-AI-Windows-DEMO-Beta
+          path: |
+            Emtifize-AI-Windows-DEMO-Beta.zip
+            Emtifize-AI-Windows-DEMO-Beta.sha256
+          if-no-files-found: error
+          retention-days: 30
