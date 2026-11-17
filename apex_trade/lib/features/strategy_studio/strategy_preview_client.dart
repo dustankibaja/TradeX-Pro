@@ -38,6 +38,12 @@ class LocalStrategyPreviewClient implements StrategyPreviewClient {
       final candleFile = File('${folder.path}\\candles.json');
       await strategyFile.writeAsString(strategy.exportJson());
       final start = DateTime.utc(2026, 1, 5);
+      final interval = switch (strategy.timeframe) {
+        'M15' => const Duration(minutes: 15),
+        'H4' => const Duration(hours: 4),
+        'D1' => const Duration(days: 1),
+        _ => const Duration(hours: 1),
+      };
       final candles = List.generate(96, (index) {
         final close = index < 32
             ? 1.12 - index * .0004
@@ -45,13 +51,14 @@ class LocalStrategyPreviewClient implements StrategyPreviewClient {
             ? 1.1072 + (index - 32) * .0006
             : 1.1264 - (index - 64) * .0005;
         return {
-          'timestamp': start.add(Duration(hours: index)).toIso8601String(),
+          'timestamp': start.add(interval * index).toIso8601String(),
           'open': close,
           'high': close + .0008,
           'low': close - .0008,
           'close': close,
           'complete': true,
-          'source': 'emtifize-controlled-fixture-v1',
+          'source':
+              'emtifize-synthetic-${strategy.timeframe.toLowerCase()}-fixture-v2',
           'price_basis': 'mid_bid_ask',
         };
       });

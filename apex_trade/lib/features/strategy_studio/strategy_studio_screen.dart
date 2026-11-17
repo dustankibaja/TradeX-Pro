@@ -4,16 +4,20 @@ import '../../core/theme/app_theme.dart';
 import 'strategy_model.dart';
 import 'strategy_preview_client.dart';
 import 'strategy_store.dart';
+import 'teach_client.dart';
+import 'teach_dialog.dart';
 
 class StrategyStudioScreen extends StatefulWidget {
   const StrategyStudioScreen({
     super.key,
     this.store = const LocalStrategyStore(),
     this.previewClient = const LocalStrategyPreviewClient(),
+    this.teachClient = const LocalTeachClient(),
     this.onHome,
   });
   final StrategyStore store;
   final StrategyPreviewClient previewClient;
+  final TeachClient teachClient;
   final VoidCallback? onHome;
   @override
   State<StrategyStudioScreen> createState() => _StrategyStudioScreenState();
@@ -35,7 +39,7 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
   Future<void> _load() async {
     try {
       _strategies = await widget.store.load();
-      _selected = _strategies.firstOrNull;
+      _selected = _strategies.firstOrNull?.copy();
     } catch (e) {
       _error = '$e';
     } finally {
@@ -55,6 +59,28 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
     });
   }
 
+  void _materialChange(VoidCallback update) {
+    update();
+    _selected?.confirmed = false;
+    _preview = null;
+  }
+
+  Future<void> _teach() async {
+    final draft = await showDialog<StrategyDefinition>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => TeachMyBotDialog(client: widget.teachClient),
+    );
+    if (draft != null && mounted) {
+      draft.confirmed = false;
+      setState(() {
+        _selected = draft;
+        _error = null;
+        _preview = null;
+      });
+    }
+  }
+
   Future<void> _save() async {
     final value = _selected;
     if (value == null) return;
@@ -62,10 +88,18 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
       value.validate();
       final index = _strategies.indexWhere((s) => s.id == value.id);
       if (index < 0) {
-        _strategies.add(value);
+        _strategies.add(value.copy());
       } else {
-        value.version = _strategies[index].version + 1;
-        _strategies[index] = value;
+        final existing = _strategies[index];
+        final candidate = value.copy()..version = existing.version;
+        if (candidate.exportJson() == existing.exportJson()) {
+          _message(
+            'No rule changes to save. Version ${existing.version} remains current.',
+          );
+          return;
+        }
+        value.version = existing.version + 1;
+        _strategies[index] = value.copy();
       }
       await _persist();
       _message('Strategy saved locally. Version ${value.version}.');
@@ -113,7 +147,7 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
         false;
     if (!yes) return;
     _strategies.removeWhere((s) => s.id == value.id);
-    _selected = _strategies.firstOrNull;
+    _selected = _strategies.firstOrNull?.copy();
     await _persist();
   }
 
@@ -254,6 +288,12 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
                 icon: const Icon(Icons.add),
                 label: const Text('Create strategy'),
               ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _teach,
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: const Text('Teach My Bot'),
+              ),
               const SizedBox(height: 14),
               Expanded(
                 child: _loading
@@ -268,7 +308,7 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
                                   'EUR/USD · ${s.timeframe} · v${s.version}',
                                 ),
                                 onTap: () => setState(() {
-                                  _selected = s;
+                                  _selected = s.copy();
                                   _error = null;
                                 }),
                               ),
@@ -357,12 +397,12 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
           TextFormField(
             initialValue: s.name,
             decoration: const InputDecoration(labelText: 'Strategy name'),
-            onChanged: (v) => s.name = v,
+            onChanged: (v) => _materialChange(() => s.name = v),
           ),
           TextFormField(
             initialValue: s.description,
             decoration: const InputDecoration(labelText: 'Description'),
-            onChanged: (v) => s.description = v,
+            onChanged: (v) => _materialChange(() => s.description = v),
           ),
           DropdownButtonFormField<String>(
             initialValue: s.timeframe,
@@ -375,7 +415,8 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
               'H4',
               'D1',
             ].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-            onChanged: (v) => setState(() => s.timeframe = v!),
+            onChanged: (v) =>
+                setState(() => _materialChange(() => s.timeframe = v!)),
           ),
         ]),
         _conditionSection('BUY conditions', s.buyFast, s.buySlow, (a, b) {
@@ -407,19 +448,20 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
           SwitchListTile(
             value: s.oppositeExit,
             title: const Text('Exit on an opposite signal'),
-            onChanged: (v) => setState(() => s.oppositeExit = v),
+            onChanged: (v) =>
+                setState(() => _materialChange(() => s.oppositeExit = v)),
           ),
         ]),
         _section('Session boundaries', [
           TextFormField(
             initialValue: s.sessionStart,
             decoration: const InputDecoration(labelText: 'Start (UTC HH:MM)'),
-            onChanged: (v) => s.sessionStart = v,
+            onChanged: (v) => _materialChange(() => s.sessionStart = v),
           ),
           TextFormField(
             initialValue: s.sessionEnd,
             decoration: const InputDecoration(labelText: 'End (UTC HH:MM)'),
-            onChanged: (v) => s.sessionEnd = v,
+            onChanged: (v) => _materialChange(() => s.sessionEnd = v),
           ),
         ]),
         Card(
@@ -531,7 +573,7 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
         keyboardType: TextInputType.number,
         onChanged: (v) {
           final n = double.tryParse(v);
-          if (n != null) change(n);
+          if (n != null) _materialChange(() => change(n));
         },
       );
   Widget _integer(String label, int value, void Function(int) change) =>
@@ -541,7 +583,7 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
         keyboardType: TextInputType.number,
         onChanged: (v) {
           final n = int.tryParse(v);
-          if (n != null) change(n);
+          if (n != null) _materialChange(() => change(n));
         },
       );
 

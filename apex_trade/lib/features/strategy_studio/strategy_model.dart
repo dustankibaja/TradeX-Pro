@@ -205,4 +205,8 @@ class StrategyDefinition {
       'Hold for at most $maxHoldingCandles candles. Signals cannot place broker orders.';
 
   String exportJson() => const JsonEncoder.withIndent('  ').convert(toJson());
+
+  StrategyDefinition copy() => StrategyDefinition.fromJson(
+    jsonDecode(exportJson()) as Map<String, dynamic>,
+  );
 }
