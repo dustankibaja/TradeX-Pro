@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../core/theme/app_theme.dart';
 import '../strategy_studio/strategy_model.dart';
 import '../strategy_studio/strategy_store.dart';
@@ -226,6 +227,17 @@ class _BacktestScreenState extends State<BacktestScreen> {
           labelText: 'Historical CSV file path',
           helperText: 'Use the documented EURUSD UTC bid/ask OHLC template.',
         ),
+      ),
+      const SizedBox(height: 8),
+      OutlinedButton.icon(
+        onPressed: () => setState(() {
+          path.text =
+              '${File(Platform.resolvedExecutable).parent.path}\\SYNTHETIC-DEMO-EURUSD-H1.csv';
+          synthetic = true;
+          validation = null;
+        }),
+        icon: const Icon(Icons.science_outlined),
+        label: const Text('Use packaged synthetic demonstration data'),
       ),
       SwitchListTile(
         value: synthetic,
