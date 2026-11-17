@@ -23,7 +23,7 @@ jobs:
           repository: dustankibaja/mt5-forex-trading-bot
           # Immutable reviewed Milestone A backend head. Milestone B adds its
           # separate evaluator runtime below without weakening onboarding.
-          ref: 9a7e16f54bb158ed25b34b148c29cc7cb29150d8
+          ref: d6b8fdc728bfe0941952d98b20c74a3bbafdb0ff
           path: backend
       - uses: actions/setup-python@v5
         with:
