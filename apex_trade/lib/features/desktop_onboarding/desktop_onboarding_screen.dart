@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'desktop_account_store.dart';
 import 'onboarding_client.dart';
+import '../strategy_studio/strategy_studio_screen.dart';
 
 class DesktopOnboardingScreen extends StatefulWidget {
   const DesktopOnboardingScreen({
@@ -26,6 +27,7 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
   String? _selectedTerminal;
   DemoVerification? _verification;
   String? _error;
+  bool _showStrategyStudio = false;
 
   Future<void> _detect() async {
     setState(() {
@@ -86,6 +88,11 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showStrategyStudio) {
+      return StrategyStudioScreen(
+        onHome: () => setState(() => _showStrategyStudio = false),
+      );
+    }
     if (_step == 3 && _verification != null) return _dashboard(_verification!);
     return Scaffold(
       body: Row(
@@ -295,7 +302,12 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
               const SizedBox(height: 42),
               _nav(Icons.home_rounded, 'Home', true),
               _nav(Icons.hub_outlined, 'Connect account', false),
-              _nav(Icons.auto_awesome_outlined, 'Strategy Studio', false),
+              _nav(
+                Icons.auto_awesome_outlined,
+                'Strategy Studio',
+                false,
+                onTap: () => setState(() => _showStrategyStudio = true),
+              ),
               _nav(Icons.query_stats_outlined, 'Backtests', false),
               _nav(Icons.shield_outlined, 'Risk & safety', false),
               const Spacer(),
@@ -547,13 +559,19 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
     ),
   );
 
-  Widget _nav(IconData icon, String label, bool selected) => Padding(
+  Widget _nav(
+    IconData icon,
+    String label,
+    bool selected, {
+    VoidCallback? onTap,
+  }) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: Material(
       color: Colors.transparent,
       child: ListTile(
         leading: Icon(icon),
         title: Text(label),
+        onTap: onTap,
         selected: selected,
         selectedTileColor: AppColors.accentSoft,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
