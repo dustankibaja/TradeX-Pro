@@ -1,58 +1,43 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'core/theme/app_theme.dart';
-import 'core/router/app_router.dart';
+import 'features/engine_status/engine_status_screen.dart';
+import 'features/desktop_onboarding/desktop_onboarding_screen.dart';
 
-void main() async {
-  // Make sure Flutter is ready
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Force portrait mode — trading apps are portrait only
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // Make status bar transparent
+  if (defaultTargetPlatform != TargetPlatform.windows) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF111827),
+      systemNavigationBarColor: AppColors.bg0,
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
-
-  runApp(
-    // ProviderScope wraps the whole app
-    // This enables Riverpod state management everywhere
-    const ProviderScope(
-      child: ApexTradeApp(),
-    ),
-  );
+  runApp(const EmtifizeApp());
 }
 
-class ApexTradeApp extends ConsumerWidget {
-  const ApexTradeApp({super.key});
+/// Single-purpose private DEMO bot console. No fabricated trading features.
+class EmtifizeApp extends StatelessWidget {
+  const EmtifizeApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Get our router from Riverpod
-    final router = ref.watch(routerProvider);
-
-    return MaterialApp.router(
-      // App identity
-      title: 'APEX Trade',
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Emtifize AI',
       debugShowCheckedModeBanner: false,
-
-      // Our premium dark theme
       theme: AppTheme.dark,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.dark,
-
-      // GoRouter handles all navigation
-      routerConfig: router,
+      home: defaultTargetPlatform == TargetPlatform.windows
+          ? const DesktopOnboardingScreen()
+          : const EngineStatusScreen(),
     );
   }
 }

@@ -1,17 +1,14 @@
-# apex_trade
+# Emtifize AI product beta
 
-A new Flutter project.
+The same Flutter codebase now provides:
 
-## Getting Started
+- a Windows-first, local DEMO account setup wizard and dashboard;
+- the existing Android private monitoring and pairing companion.
 
-This project is a starting point for a Flutter application.
+The Windows wizard detects an installed MetaTrader 5 terminal and invokes the bundled local Python safety service. It prefers the account already authenticated in the official terminal, never accepts a brokerage password, rejects non-DEMO accounts, records only a protected account fingerprint/configuration, and keeps execution locked.
 
-A few resources to get you started if this is your first Flutter project:
+## Developer run
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+For an unpackaged development run, set `EMTIFIZE_BACKEND_PYTHON` to the backend virtual-environment Python executable and `EMTIFIZE_BACKEND_ROOT` to the `mt5-ai-bot` directory. Then run the Windows target. A release package instead contains `runtime/emtifize-onboarding.exe` and does not require customer Python.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The GitHub Windows workflow builds and tests both sides, assembles a standalone ZIP, and publishes its SHA-256 checksum. It is unsigned and DEMO-only. Do not arm execution or represent this milestone as broker compatibility certification.
