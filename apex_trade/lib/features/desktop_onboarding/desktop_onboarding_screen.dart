@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import 'desktop_account_store.dart';
 import 'onboarding_client.dart';
 import '../strategy_studio/strategy_studio_screen.dart';
+import '../backtesting/backtest_screen.dart';
 
 class DesktopOnboardingScreen extends StatefulWidget {
   const DesktopOnboardingScreen({
@@ -28,6 +29,7 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
   DemoVerification? _verification;
   String? _error;
   bool _showStrategyStudio = false;
+  bool _showBacktests = false;
 
   Future<void> _detect() async {
     setState(() {
@@ -88,9 +90,18 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showBacktests) {
+      return BacktestScreen(
+        onHome: () => setState(() => _showBacktests = false),
+      );
+    }
     if (_showStrategyStudio) {
       return StrategyStudioScreen(
         onHome: () => setState(() => _showStrategyStudio = false),
+        onBacktests: () => setState(() {
+          _showStrategyStudio = false;
+          _showBacktests = true;
+        }),
       );
     }
     if (_step == 3 && _verification != null) return _dashboard(_verification!);
@@ -308,7 +319,12 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
                 false,
                 onTap: () => setState(() => _showStrategyStudio = true),
               ),
-              _nav(Icons.query_stats_outlined, 'Backtests', false),
+              _nav(
+                Icons.query_stats_outlined,
+                'Backtests',
+                false,
+                onTap: () => setState(() => _showBacktests = true),
+              ),
               _nav(Icons.shield_outlined, 'Risk & safety', false),
               const Spacer(),
               const Text(

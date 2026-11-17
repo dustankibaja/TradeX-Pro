@@ -23,7 +23,7 @@ jobs:
           repository: dustankibaja/mt5-forex-trading-bot
           # Immutable reviewed Milestone A backend head. Milestone B adds its
           # separate evaluator runtime below without weakening onboarding.
-          ref: d6b8fdc728bfe0941952d98b20c74a3bbafdb0ff
+          ref: b77988a2b52fba67eabbdb79b87f6849e4546ad4
           path: backend
       - uses: actions/setup-python@v5
         with:
@@ -34,6 +34,7 @@ jobs:
           python -m pip install --disable-pip-version-check "numpy==1.26.4" "MetaTrader5>=5.0.4682,<6.0" "pyinstaller==6.16.0"
           pyinstaller --noconfirm --clean --onefile --name emtifize-onboarding --paths . --collect-all numpy --collect-all MetaTrader5 scripts/product_onboarding.py
           pyinstaller --noconfirm --clean --onefile --name emtifize-strategy --paths . --collect-all numpy scripts/strategy_runtime.py
+          pyinstaller --noconfirm --clean --onefile --name emtifize-backtest --paths . --collect-all numpy scripts/backtest_runtime.py
           .\dist\emtifize-onboarding.exe detect | ConvertFrom-Json | Out-Null
       - uses: subosito/flutter-action@v2
         with:
@@ -58,6 +59,7 @@ jobs:
           New-Item -ItemType Directory -Path (Join-Path $stage 'runtime') | Out-Null
           Copy-Item 'backend/mt5-ai-bot/dist/emtifize-onboarding.exe' (Join-Path $stage 'runtime/emtifize-onboarding.exe')
           Copy-Item 'backend/mt5-ai-bot/dist/emtifize-strategy.exe' (Join-Path $stage 'runtime/emtifize-strategy.exe')
+          Copy-Item 'backend/mt5-ai-bot/dist/emtifize-backtest.exe' (Join-Path $stage 'runtime/emtifize-backtest.exe')
           Copy-Item 'apex_trade/BETA_WINDOWS_README.txt' (Join-Path $stage 'README.txt')
           $zip = Join-Path $PWD 'Emtifize-AI-Windows-DEMO-Beta.zip'
           Compress-Archive -Path "$stage\*" -DestinationPath $zip

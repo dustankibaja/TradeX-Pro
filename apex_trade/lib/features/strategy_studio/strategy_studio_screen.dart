@@ -14,11 +14,13 @@ class StrategyStudioScreen extends StatefulWidget {
     this.previewClient = const LocalStrategyPreviewClient(),
     this.teachClient = const LocalTeachClient(),
     this.onHome,
+    this.onBacktests,
   });
   final StrategyStore store;
   final StrategyPreviewClient previewClient;
   final TeachClient teachClient;
   final VoidCallback? onHome;
+  final VoidCallback? onBacktests;
   @override
   State<StrategyStudioScreen> createState() => _StrategyStudioScreenState();
 }
@@ -294,6 +296,12 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
                 onPressed: _teach,
                 icon: const Icon(Icons.chat_bubble_outline),
                 label: const Text('Teach My Bot'),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: widget.onBacktests,
+                icon: const Icon(Icons.query_stats),
+                label: const Text('Test My Strategy'),
               ),
               const SizedBox(height: 14),
               Expanded(
