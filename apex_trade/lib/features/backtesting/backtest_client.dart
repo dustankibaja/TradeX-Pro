@@ -10,8 +10,11 @@ class BacktestSettings {
     this.commission = 7,
     this.financing = 0,
     this.leverage = 30,
+    this.startDate,
+    this.endDate,
   });
   final double balance, slippage, commission, financing, leverage;
+  final String? startDate, endDate;
   Map<String, dynamic> get costs => {
     'slippage_pips': slippage,
     'commission_per_lot_round_turn': commission,
@@ -107,6 +110,8 @@ class LocalBacktestClient implements BacktestClient {
         'strategy': strategy.toJson(),
         'initial_balance': settings.balance,
         'cost_model': settings.costs,
+        'start_date': settings.startDate,
+        'end_date': settings.endDate,
       });
     return BacktestResult(await _call('run', path, request));
   }

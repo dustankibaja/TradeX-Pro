@@ -29,6 +29,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
   StrategyDefinition? strategy;
   DatasetValidation? validation;
   BacktestResult? result;
+  BacktestResult? comparison;
   bool busy = false, synthetic = false;
   String? error, message;
   final path = TextEditingController(),
@@ -36,7 +37,9 @@ class _BacktestScreenState extends State<BacktestScreen> {
       slippage = TextEditingController(text: '.2'),
       commission = TextEditingController(text: '7'),
       financing = TextEditingController(text: '0'),
-      leverage = TextEditingController(text: '30');
+      leverage = TextEditingController(text: '30'),
+      startDate = TextEditingController(),
+      endDate = TextEditingController();
   @override
   void initState() {
     super.initState();
@@ -72,6 +75,8 @@ class _BacktestScreenState extends State<BacktestScreen> {
         timeframe: strategy!.timeframe,
         synthetic: synthetic,
       );
+      startDate.text = validation!.firstUtc.substring(0, 10);
+      endDate.text = validation!.lastUtc.substring(0, 10);
     } catch (e) {
       error = '$e'.replaceFirst('FormatException: ', '');
     } finally {
@@ -100,6 +105,8 @@ class _BacktestScreenState extends State<BacktestScreen> {
         commission: _n(commission, 'Commission'),
         financing: _n(financing, 'Financing'),
         leverage: _n(leverage, 'Leverage'),
+        startDate: startDate.text.trim(),
+        endDate: endDate.text.trim(),
       );
       final r = await widget.client.run(
         path.text.trim(),
@@ -117,6 +124,54 @@ class _BacktestScreenState extends State<BacktestScreen> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  Future<void> _savedAction(BacktestResult item, String action) async {
+    if (action == 'rename') {
+      final controller = TextEditingController(text: item.name);
+      final name = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Rename saved simulation'),
+          content: TextField(controller: controller, maxLength: 80),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: const Text('Rename'),
+            ),
+          ],
+        ),
+      );
+      if (name != null && name.isNotEmpty) item.name = name;
+    } else {
+      final yes = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete saved simulation?'),
+          content: Text('Delete “${item.name}” from this computer?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+      if (yes == true) {
+        saved.remove(item);
+        if (identical(result, item)) result = null;
+      }
+    }
+    await widget.store.save(saved);
+    if (mounted) setState(() {});
   }
 
   @override
@@ -173,6 +228,19 @@ class _BacktestScreenState extends State<BacktestScreen> {
                             '${r.manifest['date_range']?[0] ?? ''}',
                           ),
                           onTap: () => setState(() => result = r),
+                          trailing: PopupMenuButton<String>(
+                            onSelected: (v) => _savedAction(r, v),
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(
+                                value: 'rename',
+                                child: Text('Rename'),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete'),
+                              ),
+                            ],
+                          ),
                         ),
                       )
                       .toList(),
@@ -251,6 +319,8 @@ class _BacktestScreenState extends State<BacktestScreen> {
         spacing: 12,
         runSpacing: 12,
         children: [
+          _field(startDate, 'Start date (YYYY-MM-DD)'),
+          _field(endDate, 'End date (YYYY-MM-DD)'),
           _field(balance, 'Starting simulated balance'),
           _field(slippage, 'Adverse slippage (pips)'),
           _field(commission, 'Commission per lot'),
@@ -371,6 +441,19 @@ class _BacktestScreenState extends State<BacktestScreen> {
             _metric('Modeled costs', m['trading_costs']),
           ],
         ),
+        const SizedBox(height: 18),
+        DropdownButtonFormField<BacktestResult>(
+          initialValue: comparison,
+          decoration: const InputDecoration(
+            labelText: 'Compare with a compatible saved run',
+          ),
+          items: saved
+              .where((x) => x.id != r.id)
+              .map((x) => DropdownMenuItem(value: x, child: Text(x.name)))
+              .toList(),
+          onChanged: (x) => setState(() => comparison = x),
+        ),
+        if (comparison != null) _comparisonCard(r, comparison!),
         const SizedBox(height: 24),
         const Text(
           'Equity curve',
@@ -475,6 +558,31 @@ class _BacktestScreenState extends State<BacktestScreen> {
       ),
     ),
   );
+
+  Widget _comparisonCard(BacktestResult a, BacktestResult b) {
+    final ad = a.manifest['dataset'] as Map, bd = b.manifest['dataset'] as Map;
+    final compatible =
+        ad['content_hash'] == bd['content_hash'] &&
+        '${a.manifest['date_range']}' == '${b.manifest['date_range']}';
+    if (!compatible)
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Text(
+            'These runs use different datasets or periods. Their performance is not directly comparable.',
+            style: TextStyle(color: AppColors.amber),
+          ),
+        ),
+      );
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          '${a.name}: ${a.metrics['net_profit']} net P/L · ${b.name}: ${b.metrics['net_profit']} net P/L\nCost models are shown in each reproducibility manifest.',
+        ),
+      ),
+    );
+  }
 }
 
 class _EquityPainter extends CustomPainter {
