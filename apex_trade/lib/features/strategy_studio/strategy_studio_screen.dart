@@ -62,6 +62,7 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
   void _materialChange(VoidCallback update) {
     update();
     _selected?.confirmed = false;
+    _selected?.configurationHash = null;
     _preview = null;
   }
 
@@ -419,14 +420,28 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
                 setState(() => _materialChange(() => s.timeframe = v!)),
           ),
         ]),
-        _conditionSection('BUY conditions', s.buyFast, s.buySlow, (a, b) {
-          s.buyFast = a;
-          s.buySlow = b;
-        }, 'crosses above'),
-        _conditionSection('SELL conditions', s.sellFast, s.sellSlow, (a, b) {
-          s.sellFast = a;
-          s.sellSlow = b;
-        }, 'crosses below'),
+        if (s.visuallyEditable) ...[
+          _conditionSection('BUY conditions', s.buyFast, s.buySlow, (a, b) {
+            s.buyFast = a;
+            s.buySlow = b;
+          }, 'crosses above'),
+          _conditionSection('SELL conditions', s.sellFast, s.sellSlow, (a, b) {
+            s.sellFast = a;
+            s.sellSlow = b;
+          }, 'crosses below'),
+        ] else
+          _section('Exact condition tree — read only', [
+            const Text(
+              'These rules are preserved exactly. This visual editor cannot safely change this condition shape yet.',
+            ),
+            const SizedBox(height: 10),
+            SelectableText(
+              const JsonEncoder.withIndent('  ').convert({
+                'long_entry': s.longEntry,
+                'short_entry': s.shortEntry,
+              }),
+            ),
+          ]),
         _section('Risk and exits', [
           _number('Stop loss (pips)', s.stopLoss, (v) => s.stopLoss = v),
           _number('Take profit (pips)', s.takeProfit, (v) => s.takeProfit = v),

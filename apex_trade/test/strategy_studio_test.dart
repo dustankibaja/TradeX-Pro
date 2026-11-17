@@ -21,13 +21,17 @@ class MemoryStore implements StrategyStore {
 
 class FakeTeachClient implements TeachClient {
   @override
-  Future<TeachProposal> interpret(String description) async => TeachProposal(
+  Future<TeachProposal> interpret(
+    String description, {
+    Map<String, dynamic>? previous,
+  }) async => TeachProposal(
     state: 'draft_complete',
     provider: 'fixture-local',
     questions: const [],
     ambiguities: const [],
     unsupported: const [],
     limitation: 'Fixture provider.',
+    proposalState: const {'parsed_facts': <String, dynamic>{}},
     strategy: StrategyDefinition.emaTemplate()..name = 'Taught EMA',
   );
 }

@@ -20,13 +20,17 @@ class _TeachMyBotDialogState extends State<TeachMyBotDialog> {
       setState(() => _error = 'Describe the strategy first.');
       return;
     }
+    final previous = _proposal?.proposalState;
     setState(() {
       _busy = true;
       _error = null;
       _proposal = null;
     });
     try {
-      final value = await widget.client.interpret(_controller.text);
+      final value = await widget.client.interpret(
+        _controller.text,
+        previous: previous,
+      );
       if (mounted) setState(() => _proposal = value);
     } catch (e) {
       if (mounted)
@@ -83,6 +87,12 @@ class _TeachMyBotDialogState extends State<TeachMyBotDialog> {
               Text(
                 'Interpreter: ${_proposal!.provider} · No external transmission',
               ),
+              const SizedBox(height: 8),
+              if (_proposal!.proposalState['parsed_facts'] is Map)
+                Text(
+                  'Carried-forward user facts: ${(_proposal!.proposalState['parsed_facts'] as Map).keys.join(', ')}',
+                  style: const TextStyle(color: AppColors.text3),
+                ),
               ..._proposal!.questions.map(
                 (q) => ListTile(
                   leading: const Icon(Icons.help_outline),

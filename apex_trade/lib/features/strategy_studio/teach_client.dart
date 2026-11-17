@@ -10,22 +10,30 @@ class TeachProposal {
     required this.ambiguities,
     required this.unsupported,
     required this.limitation,
+    required this.proposalState,
     this.strategy,
   });
   final String state, provider, limitation;
   final List<String> questions, ambiguities, unsupported;
+  final Map<String, dynamic> proposalState;
   final StrategyDefinition? strategy;
   bool get complete => state == 'draft_complete' && strategy != null;
 }
 
 abstract class TeachClient {
-  Future<TeachProposal> interpret(String description);
+  Future<TeachProposal> interpret(
+    String description, {
+    Map<String, dynamic>? previous,
+  });
 }
 
 class LocalTeachClient implements TeachClient {
   const LocalTeachClient();
   @override
-  Future<TeachProposal> interpret(String description) async {
+  Future<TeachProposal> interpret(
+    String description, {
+    Map<String, dynamic>? previous,
+  }) async {
     final executable = File(
       '${File(Platform.resolvedExecutable).parent.path}\\runtime\\emtifize-strategy.exe',
     );
@@ -39,6 +47,7 @@ class LocalTeachClient implements TeachClient {
           'description': description,
           'strategy_id': 'taught-${DateTime.now().microsecondsSinceEpoch}',
           'name': 'Taught strategy',
+          if (previous != null) 'previous': previous,
         }),
       );
       final result = await Process.run(executable.path, [
@@ -64,6 +73,7 @@ class LocalTeachClient implements TeachClient {
         ambiguities: strings('ambiguous_instructions'),
         unsupported: strings('unsupported_instructions'),
         limitation: value['limitation'] as String,
+        proposalState: Map<String, dynamic>.from(value),
         strategy: strategy,
       );
     } finally {
