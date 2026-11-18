@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'desktop_account_store.dart';
 import 'onboarding_client.dart';
+import 'trading_readiness_screen.dart';
 import '../strategy_studio/strategy_studio_screen.dart';
 import '../backtesting/backtest_screen.dart';
 
@@ -30,6 +31,7 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
   String? _error;
   bool _showStrategyStudio = false;
   bool _showBacktests = false;
+  bool _showReadiness = false;
 
   Future<void> _detect() async {
     setState(() {
@@ -90,6 +92,12 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showReadiness && _verification != null) {
+      return TradingReadinessScreen(
+        verification: _verification!,
+        onHome: () => setState(() => _showReadiness = false),
+      );
+    }
     if (_showBacktests) {
       return BacktestScreen(
         onHome: () => setState(() => _showBacktests = false),
@@ -325,7 +333,12 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
                 false,
                 onTap: () => setState(() => _showBacktests = true),
               ),
-              _nav(Icons.shield_outlined, 'Risk & safety', false),
+              _nav(
+                Icons.verified_user_outlined,
+                'Trading readiness',
+                false,
+                onTap: () => setState(() => _showReadiness = true),
+              ),
               const Spacer(),
               const Text(
                 'Execution locked',

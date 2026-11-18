@@ -77,6 +77,11 @@ void main() {
       expect(find.text('Automation'), findsOneWidget);
       expect(find.text('Locked'), findsOneWidget);
       expect(find.text('Setup complete'), findsOneWidget);
+      await tester.tap(find.text('Trading readiness'));
+      await tester.pumpAndSettle();
+      expect(find.text('PRE-EXECUTION ONLY'), findsOneWidget);
+      expect(find.text('Order submission unavailable'), findsOneWidget);
+      expect(find.text('Quote-time certification is still required before DEMO execution'), findsOneWidget);
     },
   );
 
