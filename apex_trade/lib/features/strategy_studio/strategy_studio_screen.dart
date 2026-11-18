@@ -275,15 +275,21 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
                 style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 28),
-              ListTile(
-                leading: const Icon(Icons.home_outlined),
-                title: const Text('Home'),
-                onTap: widget.onHome,
+              Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  leading: const Icon(Icons.home_outlined),
+                  title: const Text('Home'),
+                  onTap: widget.onHome,
+                ),
               ),
-              const ListTile(
-                selected: true,
-                leading: Icon(Icons.auto_awesome),
-                title: Text('Strategy Studio'),
+              const Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  selected: true,
+                  leading: Icon(Icons.auto_awesome),
+                  title: Text('Strategy Studio'),
+                ),
               ),
               const Divider(),
               FilledButton.icon(
@@ -310,16 +316,19 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
                     : ListView(
                         children: _strategies
                             .map(
-                              (s) => ListTile(
-                                selected: identical(s, _selected),
-                                title: Text(s.name),
-                                subtitle: Text(
-                                  'EUR/USD · ${s.timeframe} · v${s.version}',
+                              (s) => Material(
+                                color: Colors.transparent,
+                                child: ListTile(
+                                  selected: identical(s, _selected),
+                                  title: Text(s.name),
+                                  subtitle: Text(
+                                    'EUR/USD · ${s.timeframe} · v${s.version}',
+                                  ),
+                                  onTap: () => setState(() {
+                                    _selected = s.copy();
+                                    _error = null;
+                                  }),
                                 ),
-                                onTap: () => setState(() {
-                                  _selected = s.copy();
-                                  _error = null;
-                                }),
                               ),
                             )
                             .toList(),
