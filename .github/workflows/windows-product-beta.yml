@@ -21,9 +21,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dustankibaja/mt5-forex-trading-bot
-          # Immutable reviewed Milestone A backend head. Milestone B adds its
-          # separate evaluator runtime below without weakening onboarding.
-          ref: fed1b1a2eeb19cc1b3a8e9d44c96f41cc500d3a8
+          # Immutable Milestone E pre-execution backend. It contains read-only
+          # readiness checks and journals, but no automated order service.
+          ref: 89c2efdc47b3d1acbefe23ad288dd2bc0c4a0511
           path: backend
       - uses: actions/setup-python@v5
         with:
@@ -35,6 +35,7 @@ jobs:
           pyinstaller --noconfirm --clean --onefile --name emtifize-onboarding --paths . --collect-all numpy --collect-all MetaTrader5 scripts/product_onboarding.py
           pyinstaller --noconfirm --clean --onefile --name emtifize-strategy --paths . --collect-all numpy scripts/strategy_runtime.py
           pyinstaller --noconfirm --clean --onefile --name emtifize-backtest --paths . --collect-all numpy scripts/backtest_runtime.py
+          pyinstaller --noconfirm --clean --onefile --name emtifize-readiness --paths . --collect-all MetaTrader5 scripts/check_demo_order_readiness.py
           python scripts/generate_synthetic_demo.py dist/SYNTHETIC-DEMO-EURUSD-H1.csv
           .\dist\emtifize-onboarding.exe detect | ConvertFrom-Json | Out-Null
       - uses: subosito/flutter-action@v2
@@ -61,6 +62,7 @@ jobs:
           Copy-Item 'backend/mt5-ai-bot/dist/emtifize-onboarding.exe' (Join-Path $stage 'runtime/emtifize-onboarding.exe')
           Copy-Item 'backend/mt5-ai-bot/dist/emtifize-strategy.exe' (Join-Path $stage 'runtime/emtifize-strategy.exe')
           Copy-Item 'backend/mt5-ai-bot/dist/emtifize-backtest.exe' (Join-Path $stage 'runtime/emtifize-backtest.exe')
+          Copy-Item 'backend/mt5-ai-bot/dist/emtifize-readiness.exe' (Join-Path $stage 'runtime/emtifize-readiness.exe')
           Copy-Item 'backend/mt5-ai-bot/dist/SYNTHETIC-DEMO-EURUSD-H1.csv' (Join-Path $stage 'SYNTHETIC-DEMO-EURUSD-H1.csv')
           Copy-Item 'apex_trade/BETA_WINDOWS_README.txt' (Join-Path $stage 'README.txt')
           $zip = Join-Path $PWD 'Emtifize-AI-Windows-DEMO-Beta.zip'
