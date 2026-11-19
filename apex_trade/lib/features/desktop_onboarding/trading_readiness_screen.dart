@@ -125,6 +125,7 @@ class TradingReadinessScreen extends StatelessWidget {
                                   fontSize: 11,
                                 ),
                               ),
+                            ),
                         ],
                       ),
                     ),
