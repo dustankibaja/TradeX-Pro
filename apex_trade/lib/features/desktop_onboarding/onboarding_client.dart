@@ -6,17 +6,22 @@ class OnboardingCheck {
     required this.name,
     required this.passed,
     required this.detail,
+    this.phase = 'pre_execution',
   });
 
   final String name;
   final bool passed;
   final String detail;
+  final String phase;
+
+  bool get isPostExecution => phase == 'post_execution';
 
   factory OnboardingCheck.fromJson(Map<String, dynamic> json) =>
       OnboardingCheck(
         name: json['name'] as String? ?? 'Check',
         passed: json['passed'] == true,
         detail: json['detail'] as String? ?? 'No details available',
+        phase: json['phase'] as String? ?? 'pre_execution',
       );
 }
 

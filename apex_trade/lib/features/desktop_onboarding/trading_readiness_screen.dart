@@ -90,19 +90,46 @@ class TradingReadinessScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 26),
                 ...verification.checks.map(
-                  (check) => Card(
+                  (check) {
+                    final postExecution = check.isPostExecution;
+                    return Card(
                     child: ListTile(
                       leading: Icon(
-                        check.passed ? Icons.check_circle : Icons.error_outline,
-                        color: check.passed ? AppColors.green : AppColors.amber,
+                        postExecution
+                            ? Icons.history_outlined
+                            : check.passed
+                            ? Icons.check_circle
+                            : Icons.error_outline,
+                        color: postExecution
+                            ? AppColors.text3
+                            : check.passed
+                            ? AppColors.green
+                            : AppColors.amber,
                       ),
                       title: Text(
                         check.name,
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
-                      subtitle: Text(check.detail),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(check.detail),
+                          if (postExecution)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 4),
+                              child: Text(
+                                'POST-EXECUTION EVIDENCE — does not block the first supervised proposal',
+                                style: TextStyle(
+                                  color: AppColors.text3,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                        ],
+                      ),
                     ),
-                  ),
+                  );
+                  },
                 ),
                 const SizedBox(height: 18),
                 Card(

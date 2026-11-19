@@ -532,14 +532,39 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
     child: Card(
       child: ListTile(
         leading: Icon(
-          check.passed ? Icons.check_circle : Icons.error_outline,
-          color: check.passed ? AppColors.green : AppColors.amber,
+          check.isPostExecution
+              ? Icons.history_outlined
+              : check.passed
+              ? Icons.check_circle
+              : Icons.error_outline,
+          color: check.isPostExecution
+              ? AppColors.text3
+              : check.passed
+              ? AppColors.green
+              : AppColors.amber,
         ),
         title: Text(
           check.name,
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
-        subtitle: Text(check.detail),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(check.detail),
+            if (check.isPostExecution)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'POST-EXECUTION EVIDENCE — not a prerequisite for the first supervised proposal',
+                  style: TextStyle(
+                    color: AppColors.text3,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     ),
   );
