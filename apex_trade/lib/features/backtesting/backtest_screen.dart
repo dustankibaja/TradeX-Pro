@@ -174,6 +174,23 @@ class _BacktestScreenState extends State<BacktestScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _export(BacktestResult item) async {
+    setState(() {
+      error = null;
+      message = null;
+    });
+    try {
+      final files = await widget.store.export(item);
+      if (mounted) setState(() => message = 'Exported to ${files.first.parent.path}');
+    } on FileSystemException catch (_) {
+      if (mounted) {
+        setState(() => error = 'Export failed: storage is unavailable or permission was denied.');
+      }
+    } catch (_) {
+      if (mounted) setState(() => error = 'Export failed safely. Check available storage and try again.');
+    }
+  }
+
   @override
   Widget build(BuildContext c) => Scaffold(
     body: Row(
@@ -413,10 +430,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
             ),
             const Spacer(),
             OutlinedButton.icon(
-              onPressed: () async {
-                final f = await widget.store.export(r);
-                setState(() => message = 'Exported to ${f.first.parent.path}');
-              },
+              onPressed: () => _export(r),
               icon: const Icon(Icons.download),
               label: const Text('Export report, CSV and JSON'),
             ),

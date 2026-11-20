@@ -1,16 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'backtest_model.dart';
 
 class BacktestStore {
   const BacktestStore();
+
+  Future<Directory> _persistentRoot() async {
+    // Retain the existing Windows location so a product update never hides
+    // previously saved simulations. Android uses its app documents directory
+    // and therefore needs no broad storage permission.
+    final legacy = Platform.isWindows ? Platform.environment['LOCALAPPDATA'] : null;
+    if (legacy != null && legacy.trim().isNotEmpty) {
+      return Directory(p.join(legacy, 'EmtifizeAI'));
+    }
+    final documents = await getApplicationDocumentsDirectory();
+    return Directory(p.join(documents.path, 'EmtifizeAI'));
+  }
+
   Future<File> _file() async {
-    final root = Platform.environment['LOCALAPPDATA'];
-    if (root == null)
-      throw StateError('Local application storage is unavailable.');
-    final d = Directory('$root\\EmtifizeAI');
+    final d = await _persistentRoot();
     await d.create(recursive: true);
-    return File('${d.path}\\backtests-v1.json');
+    return File(p.join(d.path, 'backtests-v1.json'));
   }
 
   Future<List<BacktestResult>> load() async {
@@ -34,18 +46,21 @@ class BacktestStore {
   }
 
   Future<Directory> exportFolder() async {
-    final home = Platform.environment['USERPROFILE'];
-    if (home == null) throw StateError('User profile is unavailable.');
-    final d = Directory('$home\\Documents\\Emtifize AI Exports');
+    // Preserve the existing visible Windows export folder. Android exports stay
+    // within app documents until a future explicit share/save action is added.
+    final home = Platform.isWindows ? Platform.environment['USERPROFILE'] : null;
+    final d = home != null && home.trim().isNotEmpty
+        ? Directory(p.join(home, 'Documents', 'Emtifize AI Exports'))
+        : Directory(p.join((await _persistentRoot()).path, 'Exports'));
     await d.create(recursive: true);
     return d;
   }
 
   Future<List<File>> export(BacktestResult r) async {
     final d = await exportFolder(), base = 'backtest-${r.id}';
-    final jsonFile = File('${d.path}\\$base.json'),
-        csv = File('${d.path}\\$base-trades.csv'),
-        report = File('${d.path}\\$base-report.txt');
+    final jsonFile = File(p.join(d.path, '$base.json')),
+        csv = File(p.join(d.path, '$base-trades.csv')),
+        report = File(p.join(d.path, '$base-report.txt'));
     final portable = r.report.isEmpty ? r.value : r.report;
     await jsonFile.writeAsString(
       const JsonEncoder.withIndent('  ').convert(portable),
