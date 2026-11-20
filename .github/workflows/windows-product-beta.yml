@@ -21,9 +21,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dustankibaja/mt5-forex-trading-bot
-          # Immutable Milestone E pre-execution backend. It contains read-only
-          # readiness checks and journals, but no automated order service.
-          ref: 89c2efdc47b3d1acbefe23ad288dd2bc0c4a0511
+          # Immutable E.1 backend with read-only reconciliation, risk-status
+          # reporting and no automated order service.
+          ref: 392f437c9ce1bf4d292961726a7c33f4090092d3
           path: backend
       - uses: actions/setup-python@v5
         with:
