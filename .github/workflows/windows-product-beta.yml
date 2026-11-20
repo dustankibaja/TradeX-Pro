@@ -23,7 +23,7 @@ jobs:
           repository: dustankibaja/mt5-forex-trading-bot
           # Immutable E.1 backend with read-only reconciliation, risk-status
           # reporting and no automated order service.
-          ref: 82f0c80329dda8ea8b5e9b27fc9f3a328e10428d
+          ref: 392f437c9ce1bf4d292961726a7c33f4090092d3
           path: backend
       - uses: actions/setup-python@v5
         with:
