@@ -23,7 +23,7 @@ jobs:
           repository: dustankibaja/mt5-forex-trading-bot
           # Immutable Beta F.1 report and explanation contract. This reviewed
           # product-backend pin preserves all E.1 execution locks.
-          ref: 91339ff161d7d3f1bc23538782f7784291bebfba
+          ref: 6358c71d8da3641d91fcea3feacb2b910b116353
           path: backend
       - uses: actions/setup-python@v5
         with:
