@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:cross_file/cross_file.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../strategy_studio/strategy_model.dart';
 import '../strategy_studio/strategy_store.dart';
@@ -181,6 +183,15 @@ class _BacktestScreenState extends State<BacktestScreen> {
     });
     try {
       final files = await widget.store.export(item);
+      if (Platform.isAndroid) {
+        await SharePlus.instance.share(
+          ShareParams(
+            files: files.map((file) => XFile(file.path)).toList(),
+            subject: 'Emtifize AI historical simulation export',
+            text: 'Historical simulation only — not broker execution.',
+          ),
+        );
+      }
       if (mounted) setState(() => message = 'Exported to ${files.first.parent.path}');
     } on FileSystemException catch (_) {
       if (mounted) {
@@ -287,6 +298,17 @@ class _BacktestScreenState extends State<BacktestScreen> {
         'Run a deterministic historical simulation. This cannot place a trade.',
       ),
       const SizedBox(height: 22),
+      if (!Platform.isWindows)
+        const Card(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Historical simulation is available in the Windows beta only. '
+              'This Android build can safely display saved simulation records and share exports, but does not ship a local simulator runtime.',
+              style: TextStyle(color: AppColors.amber),
+            ),
+          ),
+        ),
       DropdownButtonFormField<StrategyDefinition>(
         initialValue: strategy,
         decoration: const InputDecoration(
@@ -347,7 +369,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
       ),
       const SizedBox(height: 18),
       FilledButton.icon(
-        onPressed: busy ? null : _validate,
+        onPressed: busy || !Platform.isWindows ? null : _validate,
         icon: busy
             ? const SizedBox(
                 width: 18,
@@ -432,7 +454,11 @@ class _BacktestScreenState extends State<BacktestScreen> {
             OutlinedButton.icon(
               onPressed: () => _export(r),
               icon: const Icon(Icons.download),
-              label: const Text('Export report, CSV and JSON'),
+              label: Text(
+                Platform.isAndroid
+                    ? 'Export / share report, CSV and JSON'
+                    : 'Export report, CSV and JSON',
+              ),
             ),
           ],
         ),
