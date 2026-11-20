@@ -545,7 +545,6 @@ class _BacktestScreenState extends State<BacktestScreen> {
                   .toList(),
             ),
           ),
-        ),
         if ((report['rejected_signals'] as List? ?? []).isNotEmpty) ...[
           const SizedBox(height: 20),
           const Text('Rejected simulated signals',
