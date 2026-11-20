@@ -46,11 +46,19 @@ class BacktestStore {
     final jsonFile = File('${d.path}\\$base.json'),
         csv = File('${d.path}\\$base-trades.csv'),
         report = File('${d.path}\\$base-report.txt');
-    await jsonFile.writeAsString(r.encode(), flush: true);
+    final portable = r.report.isEmpty ? r.value : r.report;
+    await jsonFile.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(portable),
+      flush: true,
+    );
     final b = StringBuffer(
       'side,entry_time,exit_time,entry,exit,lots,stop,target,gross_pnl,commission,financing,net_pnl,reason\n',
     );
-    for (final t in r.trades) {
+    final ledger = (r.report['historical_trade_ledger'] as List? ?? r.trades)
+        .map((v) => Map<String, dynamic>.from(v as Map))
+        .toList();
+    String cell(Object? value) => '"${'$value'.replaceAll('"', '""')}"';
+    for (final t in ledger) {
       b.writeln(
         [
           'side',
@@ -66,12 +74,12 @@ class BacktestStore {
           'financing',
           'net_pnl',
           'reason',
-        ].map((k) => t[k] ?? '').join(','),
+        ].map((k) => cell(t[k] ?? '')).join(','),
       );
     }
     await csv.writeAsString(b.toString(), flush: true);
     await report.writeAsString(
-      'EMTIFIZE AI — HISTORICAL SIMULATION\nNot actual profit and not a promise of future results.\n\n${r.encode()}',
+      'EMTIFIZE AI — HISTORICAL SIMULATION\nNot actual profit and not a promise of future results.\n\n${const JsonEncoder.withIndent('  ').convert(portable)}',
       flush: true,
     );
     return [report, csv, jsonFile];

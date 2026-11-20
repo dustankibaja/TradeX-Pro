@@ -396,6 +396,8 @@ class _BacktestScreenState extends State<BacktestScreen> {
   );
   Widget _results(BacktestResult r) {
     final m = r.metrics;
+    final report = r.report;
+    final reproducibility = report['reproducibility'] as Map?;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -442,6 +444,23 @@ class _BacktestScreenState extends State<BacktestScreen> {
           ],
         ),
         const SizedBox(height: 18),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Reproducibility and assumptions',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                Text('Run ID: ${r.id}'),
+                Text('Simulation fingerprint: ${r.fingerprint.isEmpty ? 'Unavailable in this older saved run' : r.fingerprint}'),
+                Text('Dataset: ${r.manifest['dataset']?['identifier'] ?? 'Unavailable'}'),
+                Text('Dataset SHA-256: ${r.manifest['dataset']?['content_hash'] ?? 'Unavailable'}'),
+                Text('Cost model: ${reproducibility?['cost_model'] ?? r.manifest['cost_model'] ?? 'Unavailable'}'),
+              ],
+            ),
+          ),
+        ),
         DropdownButtonFormField<BacktestResult>(
           initialValue: comparison,
           decoration: const InputDecoration(
@@ -526,6 +545,21 @@ class _BacktestScreenState extends State<BacktestScreen> {
                   .toList(),
             ),
           ),
+        ),
+        if ((report['rejected_signals'] as List? ?? []).isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const Text('Rejected simulated signals',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+          ...((report['rejected_signals'] as List).take(12).map(
+                (item) {
+                  final value = Map<String, dynamic>.from(item as Map);
+                  return ListTile(
+                    title: Text('${value['side'] ?? 'Signal'} · ${value['decision_candle'] ?? ''}'),
+                    subtitle: Text('${value['explanation'] ?? value['reason'] ?? 'No explanation available.'}'),
+                  );
+                },
+              )),
+        ],
         const SizedBox(height: 16),
         ...((r.manifest['warnings'] as List? ?? []).map(
           (w) => Text(

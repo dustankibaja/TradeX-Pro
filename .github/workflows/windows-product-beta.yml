@@ -21,9 +21,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dustankibaja/mt5-forex-trading-bot
-          # Immutable E.1 backend with read-only reconciliation, risk-status
-          # reporting and no automated order service.
-          ref: 392f437c9ce1bf4d292961726a7c33f4090092d3
+          # Immutable Beta F.1 report and explanation contract. This reviewed
+          # product-backend pin preserves all E.1 execution locks.
+          ref: 91339ff161d7d3f1bc23538782f7784291bebfba
           path: backend
       - uses: actions/setup-python@v5
         with:

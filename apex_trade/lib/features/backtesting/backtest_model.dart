@@ -7,6 +7,9 @@ class BacktestResult {
       Map<String, dynamic>.from(value['metrics'] as Map);
   Map<String, dynamic> get manifest =>
       Map<String, dynamic>.from(value['manifest'] as Map);
+  Map<String, dynamic> get report => value['report'] is Map
+      ? Map<String, dynamic>.from(value['report'] as Map)
+      : const {};
   List<Map<String, dynamic>> get trades => (value['trades'] as List? ?? [])
       .map((v) => Map<String, dynamic>.from(v as Map))
       .toList();
@@ -15,6 +18,7 @@ class BacktestResult {
           .map((v) => Map<String, dynamic>.from(v as Map))
           .toList();
   String get id => '${manifest['run_id']}';
+  String get fingerprint => '${manifest['simulation_content_fingerprint'] ?? ''}';
   String get name =>
       '${value['saved_name'] ?? 'Backtest ${id.substring(0, 8)}'}';
   set name(String v) => value['saved_name'] = v;
