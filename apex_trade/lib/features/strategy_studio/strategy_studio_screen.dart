@@ -647,12 +647,9 @@ class _StrategyStudioScreenState extends State<StrategyStudioScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          ...value.signals
-              .where((s) => s['decision'] != 'neutral')
-              .take(8)
-              .map(
+          ...value.signals.take(8).map(
                 (s) => Text(
-                  '${s['timestamp']} — ${s['decision'].toString().toUpperCase()} because its completed-candle condition passed.',
+                  '${s['timestamp']} — ${s['display_decision'] ?? s['decision'].toString().toUpperCase()}: ${s['explanation'] ?? 'Completed-candle condition evaluation recorded.'}',
                 ),
               ),
         ],

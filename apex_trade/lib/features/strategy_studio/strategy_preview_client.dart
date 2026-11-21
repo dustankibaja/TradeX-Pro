@@ -25,6 +25,12 @@ class LocalStrategyPreviewClient implements StrategyPreviewClient {
   @override
   Future<SignalPreview> preview(StrategyDefinition strategy) async {
     strategy.validate();
+    if (!Platform.isWindows) {
+      throw StateError(
+        'Signal preview is currently available in the Windows beta only. '
+        'This Android build does not contain the local evaluator runtime.',
+      );
+    }
     final executable = File(
       '${File(Platform.resolvedExecutable).parent.path}\\runtime\\emtifize-strategy.exe',
     );

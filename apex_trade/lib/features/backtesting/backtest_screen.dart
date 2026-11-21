@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:cross_file/cross_file.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../strategy_studio/strategy_model.dart';
 import '../strategy_studio/strategy_store.dart';
@@ -174,6 +176,32 @@ class _BacktestScreenState extends State<BacktestScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _export(BacktestResult item) async {
+    setState(() {
+      error = null;
+      message = null;
+    });
+    try {
+      final files = await widget.store.export(item);
+      if (Platform.isAndroid) {
+        await SharePlus.instance.share(
+          ShareParams(
+            files: files.map((file) => XFile(file.path)).toList(),
+            subject: 'Emtifize AI historical simulation export',
+            text: 'Historical simulation only — not broker execution.',
+          ),
+        );
+      }
+      if (mounted) setState(() => message = 'Exported to ${files.first.parent.path}');
+    } on FileSystemException catch (_) {
+      if (mounted) {
+        setState(() => error = 'Export failed: storage is unavailable or permission was denied.');
+      }
+    } catch (_) {
+      if (mounted) setState(() => error = 'Export failed safely. Check available storage and try again.');
+    }
+  }
+
   @override
   Widget build(BuildContext c) => Scaffold(
     body: Row(
@@ -270,6 +298,17 @@ class _BacktestScreenState extends State<BacktestScreen> {
         'Run a deterministic historical simulation. This cannot place a trade.',
       ),
       const SizedBox(height: 22),
+      if (!Platform.isWindows)
+        const Card(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Historical simulation is available in the Windows beta only. '
+              'This Android build can safely display saved simulation records and share exports, but does not ship a local simulator runtime.',
+              style: TextStyle(color: AppColors.amber),
+            ),
+          ),
+        ),
       DropdownButtonFormField<StrategyDefinition>(
         initialValue: strategy,
         decoration: const InputDecoration(
@@ -330,7 +369,7 @@ class _BacktestScreenState extends State<BacktestScreen> {
       ),
       const SizedBox(height: 18),
       FilledButton.icon(
-        onPressed: busy ? null : _validate,
+        onPressed: busy || !Platform.isWindows ? null : _validate,
         icon: busy
             ? const SizedBox(
                 width: 18,
@@ -396,6 +435,8 @@ class _BacktestScreenState extends State<BacktestScreen> {
   );
   Widget _results(BacktestResult r) {
     final m = r.metrics;
+    final report = r.report;
+    final reproducibility = report['reproducibility'] as Map?;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -411,12 +452,13 @@ class _BacktestScreenState extends State<BacktestScreen> {
             ),
             const Spacer(),
             OutlinedButton.icon(
-              onPressed: () async {
-                final f = await widget.store.export(r);
-                setState(() => message = 'Exported to ${f.first.parent.path}');
-              },
+              onPressed: () => _export(r),
               icon: const Icon(Icons.download),
-              label: const Text('Export report, CSV and JSON'),
+              label: Text(
+                Platform.isAndroid
+                    ? 'Export / share report, CSV and JSON'
+                    : 'Export report, CSV and JSON',
+              ),
             ),
           ],
         ),
@@ -442,6 +484,23 @@ class _BacktestScreenState extends State<BacktestScreen> {
           ],
         ),
         const SizedBox(height: 18),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Reproducibility and assumptions',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                Text('Run ID: ${r.id}'),
+                Text('Simulation fingerprint: ${r.fingerprint.isEmpty ? 'Unavailable in this older saved run' : r.fingerprint}'),
+                Text('Dataset: ${r.manifest['dataset']?['identifier'] ?? 'Unavailable'}'),
+                Text('Dataset SHA-256: ${r.manifest['dataset']?['content_hash'] ?? 'Unavailable'}'),
+                Text('Cost model: ${reproducibility?['cost_model'] ?? r.manifest['cost_model'] ?? 'Unavailable'}'),
+              ],
+            ),
+          ),
+        ),
         DropdownButtonFormField<BacktestResult>(
           initialValue: comparison,
           decoration: const InputDecoration(
@@ -526,6 +585,20 @@ class _BacktestScreenState extends State<BacktestScreen> {
                   .toList(),
             ),
           ),
+        if ((report['rejected_signals'] as List? ?? []).isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const Text('Rejected simulated signals',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+          ...((report['rejected_signals'] as List).take(12).map(
+                (item) {
+                  final value = Map<String, dynamic>.from(item as Map);
+                  return ListTile(
+                    title: Text('${value['side'] ?? 'Signal'} · ${value['decision_candle'] ?? ''}'),
+                    subtitle: Text('${value['explanation'] ?? value['reason'] ?? 'No explanation available.'}'),
+                  );
+                },
+              )),
+        ],
         const SizedBox(height: 16),
         ...((r.manifest['warnings'] as List? ?? []).map(
           (w) => Text(

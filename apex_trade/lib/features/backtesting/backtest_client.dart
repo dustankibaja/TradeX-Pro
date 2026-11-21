@@ -48,6 +48,12 @@ class LocalBacktestClient implements BacktestClient {
     String path,
     Map<String, dynamic> request,
   ) async {
+    if (!Platform.isWindows) {
+      throw StateError(
+        'Historical simulation is currently available in the Windows beta only. '
+        'This Android build does not contain the local simulator runtime.',
+      );
+    }
     final exe = File(
       '${File(Platform.resolvedExecutable).parent.path}\\runtime\\emtifize-backtest.exe',
     );

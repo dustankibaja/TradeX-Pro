@@ -60,7 +60,9 @@ void main() {
 
       expect(find.text('Welcome to Emtifize AI'), findsOneWidget);
       expect(find.text('DEMO accounts only'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'Find MetaTrader 5'));
+      final findTerminal = find.widgetWithText(FilledButton, 'Find MetaTrader 5');
+      await tester.ensureVisible(findTerminal);
+      await tester.tap(findTerminal);
       await tester.pumpAndSettle();
 
       expect(find.text('Choose your MetaTrader 5 terminal'), findsOneWidget);
@@ -98,4 +100,27 @@ void main() {
       expect(parsed.verified, isFalse);
     },
   );
+
+  testWidgets('offline research unlocks only strategy and backtest tooling',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(home: DesktopOnboardingScreen(client: FakeClient())),
+    );
+
+    final offline = find.text('Use offline research workspace');
+    await tester.ensureVisible(offline);
+    await tester.tap(offline);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Offline research workspace'), findsOneWidget);
+    expect(find.text('No broker account connected · simulation-only workspace'),
+        findsOneWidget);
+    expect(find.text('Trading readiness'), findsNothing);
+    expect(find.text('Execution locked'), findsOneWidget);
+    await tester.tap(find.text('Backtests'));
+    await tester.pumpAndSettle();
+    expect(find.text('Test My Strategy'), findsOneWidget);
+  });
 }

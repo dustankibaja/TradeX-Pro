@@ -32,6 +32,7 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
   bool _showStrategyStudio = false;
   bool _showBacktests = false;
   bool _showReadiness = false;
+  bool _offlineResearch = false;
 
   Future<void> _detect() async {
     setState(() {
@@ -112,7 +113,9 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
         }),
       );
     }
-    if (_step == 3 && _verification != null) return _dashboard(_verification!);
+    if (_step == 3 && (_verification != null || _offlineResearch)) {
+      return _dashboard(_verification);
+    }
     return Scaffold(
       body: Row(
         children: [
@@ -198,6 +201,24 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
         'We will check it without switching accounts, storing a password, or placing a trade.',
         style: TextStyle(fontSize: 18, color: AppColors.text2, height: 1.55),
       ),
+       const SizedBox(height: 24),
+       OutlinedButton.icon(
+         onPressed: _busy
+             ? null
+             : () => setState(() {
+                   _offlineResearch = true;
+                   _step = 3;
+                 }),
+         icon: const Icon(Icons.science_outlined),
+         label: const Text('Use offline research workspace'),
+       ),
+       const Padding(
+         padding: EdgeInsets.only(top: 8),
+         child: Text(
+           'Use Strategy Studio and synthetic historical backtests without connecting a broker account. Trading readiness and execution remain unavailable.',
+           style: TextStyle(color: AppColors.text3),
+         ),
+       ),
       const SizedBox(height: 34),
       _notice(
         Icons.shield_outlined,
@@ -307,7 +328,7 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
     );
   }
 
-  Widget _dashboard(DemoVerification value) => Scaffold(
+  Widget _dashboard(DemoVerification? value) => Scaffold(
     body: Row(
       children: [
         Container(
@@ -333,12 +354,13 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
                 false,
                 onTap: () => setState(() => _showBacktests = true),
               ),
-              _nav(
-                Icons.verified_user_outlined,
-                'Trading readiness',
-                false,
-                onTap: () => setState(() => _showReadiness = true),
-              ),
+              if (value != null)
+                _nav(
+                  Icons.verified_user_outlined,
+                  'Trading readiness',
+                  false,
+                  onTap: () => setState(() => _showReadiness = true),
+                ),
               const Spacer(),
               const Text(
                 'Execution locked',
@@ -356,8 +378,8 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Good to see you',
+                Text(
+                  value == null ? 'Offline research workspace' : 'Good to see you',
                   style: TextStyle(
                     fontSize: 32,
                     color: AppColors.text1,
@@ -366,7 +388,9 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${value.accountLabel} · ${value.server}',
+                  value == null
+                      ? 'No broker account connected · simulation-only workspace'
+                      : '${value.accountLabel} · ${value.server}',
                   style: const TextStyle(color: AppColors.text2, fontSize: 16),
                 ),
                 const SizedBox(height: 30),
@@ -374,17 +398,21 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
                   spacing: 16,
                   runSpacing: 16,
                   children: [
-                    _metric('Account', 'DEMO verified', AppColors.green),
-                    _metric('Runtime', 'Paused', AppColors.amber),
+                    _metric(
+                      'Account',
+                      value == null ? 'Not connected' : 'DEMO verified',
+                      value == null ? AppColors.amber : AppColors.green,
+                    ),
+                    _metric('Runtime', value == null ? 'Offline' : 'Paused', AppColors.amber),
                     _metric('Automation', 'Locked', AppColors.red),
                   ],
                 ),
                 const SizedBox(height: 28),
-                _blockedCard(value.blockedReason),
+                _blockedCard(value?.blockedReason ?? 'Offline research does not connect to a broker. Trading readiness remains unavailable.'),
                 const SizedBox(height: 24),
-                const Card(
+                Card(
                   child: Padding(
-                    padding: EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(24),
                     child: Row(
                       children: [
                         Icon(
@@ -398,7 +426,7 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Setup complete',
+                                value == null ? 'Offline research enabled' : 'Setup complete',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -406,7 +434,9 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
                               ),
                               SizedBox(height: 5),
                               Text(
-                                'Your verified local configuration is protected by Windows. No trading was armed.',
+                                value == null
+                                    ? 'Synthetic strategy design and historical simulation are available. No broker account, MT5 action, or trading capability is enabled.'
+                                    : 'Your verified local configuration is protected by Windows. No trading was armed.',
                               ),
                             ],
                           ),
