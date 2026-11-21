@@ -98,4 +98,25 @@ void main() {
       expect(parsed.verified, isFalse);
     },
   );
+
+  testWidgets('offline research unlocks only strategy and backtest tooling',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 720));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(home: DesktopOnboardingScreen(client: FakeClient())),
+    );
+
+    await tester.tap(find.text('Use offline research workspace'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Offline research workspace'), findsOneWidget);
+    expect(find.text('No broker account connected · simulation-only workspace'),
+        findsOneWidget);
+    expect(find.text('Trading readiness'), findsNothing);
+    expect(find.text('Execution locked'), findsOneWidget);
+    await tester.tap(find.text('Backtests'));
+    await tester.pumpAndSettle();
+    expect(find.text('Test My Strategy'), findsOneWidget);
+  });
 }
