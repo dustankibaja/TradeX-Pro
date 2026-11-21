@@ -107,7 +107,9 @@ void main() {
       MaterialApp(home: DesktopOnboardingScreen(client: FakeClient())),
     );
 
-    await tester.tap(find.text('Use offline research workspace'));
+    final offline = find.text('Use offline research workspace');
+    await tester.ensureVisible(offline);
+    await tester.tap(offline);
     await tester.pumpAndSettle();
 
     expect(find.text('Offline research workspace'), findsOneWidget);

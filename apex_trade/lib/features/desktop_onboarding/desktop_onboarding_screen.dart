@@ -201,21 +201,7 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
         'We will check it without switching accounts, storing a password, or placing a trade.',
         style: TextStyle(fontSize: 18, color: AppColors.text2, height: 1.55),
       ),
-      const SizedBox(height: 34),
-      _notice(
-        Icons.shield_outlined,
-        'DEMO accounts only',
-        'Funded and contest accounts are technically rejected by the local safety service.',
-      ),
-      const SizedBox(height: 14),
-      _notice(
-        Icons.computer_outlined,
-        'Local-first and private',
-        'Your terminal and verified configuration stay on this Windows computer.',
-      ),
-      const SizedBox(height: 36),
-      _primaryButton('Find MetaTrader 5', _busy ? null : _detect),
-       const SizedBox(height: 12),
+       const SizedBox(height: 24),
        OutlinedButton.icon(
          onPressed: _busy
              ? null
@@ -233,6 +219,20 @@ class _DesktopOnboardingScreenState extends State<DesktopOnboardingScreen> {
            style: TextStyle(color: AppColors.text3),
          ),
        ),
+      const SizedBox(height: 34),
+      _notice(
+        Icons.shield_outlined,
+        'DEMO accounts only',
+        'Funded and contest accounts are technically rejected by the local safety service.',
+      ),
+      const SizedBox(height: 14),
+      _notice(
+        Icons.computer_outlined,
+        'Local-first and private',
+        'Your terminal and verified configuration stay on this Windows computer.',
+      ),
+      const SizedBox(height: 36),
+      _primaryButton('Find MetaTrader 5', _busy ? null : _detect),
     ],
   );
 
