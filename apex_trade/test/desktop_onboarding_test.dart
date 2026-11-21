@@ -60,7 +60,9 @@ void main() {
 
       expect(find.text('Welcome to Emtifize AI'), findsOneWidget);
       expect(find.text('DEMO accounts only'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'Find MetaTrader 5'));
+      final findTerminal = find.widgetWithText(FilledButton, 'Find MetaTrader 5');
+      await tester.ensureVisible(findTerminal);
+      await tester.tap(findTerminal);
       await tester.pumpAndSettle();
 
       expect(find.text('Choose your MetaTrader 5 terminal'), findsOneWidget);
